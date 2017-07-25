@@ -6,6 +6,9 @@
 #
 # Notes:
 #
+# (--) To set values for an openVA algorithm navigate to "OPENVA ALGORITHM DEFAULTS" and change to desired values.
+#      --> an alternative is to specify default values in the database
+#
 #
 #
 #------------------------------------------------------------------------------------------------------------------------------------------#
@@ -115,6 +118,88 @@ openVAFilesDir = ProcessDir + "/OpenVAFiles"
 openVAReadyFile = odkBCExportDir + "/OpenVAReadyFile.csv"
 rScriptIn  = openVAFilesDir + "/RScript.R"
 rScriptOut = openVAFilesDir + "/RScript.Rout"
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+# OPENVA ALGORITHM DEFAULTS
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+##### HERE -- which of these does codeVA() refer to?
+
+## InSilicoVA
+     # insilico(data, isNumeric = FALSE, updateCondProb = TRUE,
+     #   keepProbbase.level = TRUE, CondProb = NULL, CondProbNum = NULL,
+     #   datacheck = TRUE, datacheck.missing = TRUE, warning.write = FALSE,
+     #   external.sep = TRUE, Nsim = 4000, thin = 10, burnin = 2000,
+     #   auto.length = TRUE, conv.csmf = 0.02, jump.scale = 0.1,
+     #   levels.prior = NULL, levels.strength = 1, trunc.min = 1e-04,
+     #   trunc.max = 0.9999, subpop = NULL, java_option = "-Xmx1g", seed = 1,
+     #   phy.code = NULL, phy.cat = NULL, phy.unknown = NULL,
+     #   phy.external = NULL, phy.debias = NULL, exclude.impossible.cause = TRUE,
+     #   indiv.CI = NULL)
+#### Required Args: Input, Nsim 
+inSilicoVA_isNumeric = "FALSE"
+inSilicoVA_updateCondProb = "TRUE"
+inSilicoVA_keepProbbase_level = "TRUE"
+inSilicoVA_CondProb = "NULL"
+inSilicoVA_CondProbNum = "NULL"
+inSilicoVA_datacheck = "TRUE"
+inSilicoVA_datacheck_missing = "TRUE"
+inSilicoVA_warning_write = "FALSE"
+inSilicoVA_external_sep = "TRUE"
+# inSilicoVA_Nsim = 4000
+inSilicoVA_thin = 10
+inSilicoVA_burnin = 2000
+inSilicoVA_auto_length = "TRUE"
+inSilicoVA_conv_csmf = 0.02
+inSilicoVA_jump_scale = 0.1
+inSilicoVA_levels_prior = "NULL"
+inSilicoVA_levels_strength = 1
+inSilicoVA_trunc_min = 1e-04
+inSilicoVA_trunc_max = 0.9999
+inSilicoVA_subpop = "NULL"
+inSilicoVA_java_option = "-Xmx1g"
+inSilicoVA_seed = 1
+inSilicoVA_phy_code = "NULL"
+inSilicoVA_phy_cat = "NULL"
+inSilicoVA_phy_unknown = "NULL"
+inSilicoVA_phy_external = "NULL"
+inSilicoVA_phy_debias = "NULL"
+inSilicoVA_exclude_impossible_cause = "TRUE"
+inSilicoVA_indiv_CI = "NULL"
+
+## InterVA
+     # InterVA(Input, HIV, Malaria, directory = NULL, filename = "VA_result",
+     #   output = "classic", append = FALSE, groupcode = FALSE,
+     #   replicate = FALSE, replicate.bug1 = FALSE, replicate.bug2 = FALSE,
+     #   write = TRUE)
+#### Required Args: Input, HIV, Malaria
+InterVA_directory      = "NULL"
+InterVA_filename       = "VA_result"
+InterVA_output         = "classic"
+InterVA_append         = "FALSE"
+InterVA_groupcode      = "FALSE"
+InterVA_Replicate      = "FALSE"
+InterVA_Replicate.bug1 = "FALSE"
+InterVA_Replicate.bug2 = "FALSE"
+InterVA_Write          = "TRUE"
+
+## Naive Bayes Classifier
+     # nbc(train, test, known = TRUE)
+#### Required Args: train, test
+NBC_KNOWN = "TRUE"
+
+## Tariff
+     # tariff(causes.train, symps.train, symps.test, causes.table = NULL,
+     #   use.rank = TRUE, nboot.rank = 1, use.sig = TRUE, nboot.sig = 500,
+     #   use.top = FALSE, ntop = 40)
+#### Required Args: causes.train, symps.train, symps.test
+Tariff_causes_table = "NULL"
+Tariff_use_rank = "TRUE"
+Tariff_nboot_rank = 1
+Tariff_use_sig = "TRUE"
+Tariff_nboot_sig = 500
+Tariff_use_top = "FALSE"
+Tariff_ntop = 40
+
 
 #Check if Processing Directory exists and create if necessary
 if not os.path.exists(ProcessDir):
@@ -255,10 +340,13 @@ else:
     #Create R script for running openVA (HERE -- if this file already exists, remove it?)
     try:
         f = open(rScriptIn, "wb")
-        f.write("library(openVA); library(CrossVA)")
-        f.write("args <- ")
-
-        f.write("data <- read.csv(" + openVAReadyFile + ")")
+        f.write("library(openVA); library(CrossVA) \n")
+        f.write("getwd() \n")
+        f.write("data <- read.csv(\"" + openVAReadyFile + "\") \n")
+        # f.write("data")
+        f.write("codeVA(data=data," + "data.type=" + DataType + ", model=" + Model + ", \n")
+        f.write("\t data.train=" + DataTrain + ", causes.train=" + CausesTrain + ", \n")
+        f.write("\t Nsim=" + NSim + "auto.length" auto.length + ", \n")        
         f.close()
     except:
         sql = """INSERT INTO wp_SVA_EventLog(EventDesc,EventType) VALUES ('Could not create R Script File','Error')"""
@@ -270,7 +358,8 @@ else:
         cleanup()
 
     #Run RScript -- STOPPED HERE
-    rBatch = "R CMD BATCH --vanilla" + rScriptIn + " " + rScriptOut + " --args datafile=" + openVAReadyFile
+    rBatch = "R CMD BATCH --vanilla " + rScriptIn + " " + rScriptOut
+    #rBatch = "R CMD BATCH --vanilla" + rScriptIn + " " + rScriptOut + " --args datafile=" + openVAReadyFile
 
     rprocess = subprocess.Popen(rBatch, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdout, stderr = rprocess.communicate()
