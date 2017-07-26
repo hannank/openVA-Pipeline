@@ -122,6 +122,13 @@ rScriptOut = openVAFilesDir + "/RScript.Rout"
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
 # OPENVA ALGORITHM DEFAULTS
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+#### HERE -- how do you want to read in the primary inputs
+DataType = '"customize"'
+Model = '"InSilicoVA"'
+# DataTrain = '"train"'
+DataTrain = "train"
+CausesTrain = '"cause"'
+##### HERE -- put these into an array and loop over them when writing the R script?
 ##### HERE -- which of these does codeVA() refer to?
 
 ## InSilicoVA
@@ -136,35 +143,35 @@ rScriptOut = openVAFilesDir + "/RScript.Rout"
      #   phy.external = NULL, phy.debias = NULL, exclude.impossible.cause = TRUE,
      #   indiv.CI = NULL)
 #### Required Args: Input, Nsim 
-inSilicoVA_isNumeric = "FALSE"
-inSilicoVA_updateCondProb = "TRUE"
-inSilicoVA_keepProbbase_level = "TRUE"
-inSilicoVA_CondProb = "NULL"
-inSilicoVA_CondProbNum = "NULL"
-inSilicoVA_datacheck = "TRUE"
-inSilicoVA_datacheck_missing = "TRUE"
-inSilicoVA_warning_write = "FALSE"
-inSilicoVA_external_sep = "TRUE"
-# inSilicoVA_Nsim = 4000
-inSilicoVA_thin = 10
-inSilicoVA_burnin = 2000
-inSilicoVA_auto_length = "TRUE"
-inSilicoVA_conv_csmf = 0.02
-inSilicoVA_jump_scale = 0.1
-inSilicoVA_levels_prior = "NULL"
-inSilicoVA_levels_strength = 1
-inSilicoVA_trunc_min = 1e-04
-inSilicoVA_trunc_max = 0.9999
-inSilicoVA_subpop = "NULL"
-inSilicoVA_java_option = "-Xmx1g"
-inSilicoVA_seed = 1
-inSilicoVA_phy_code = "NULL"
-inSilicoVA_phy_cat = "NULL"
-inSilicoVA_phy_unknown = "NULL"
-inSilicoVA_phy_external = "NULL"
-inSilicoVA_phy_debias = "NULL"
-inSilicoVA_exclude_impossible_cause = "TRUE"
-inSilicoVA_indiv_CI = "NULL"
+insilico_Nsim = "10000"
+insilico_isNumeric = "FALSE"
+insilico_updateCondProb = "TRUE"
+insilico_keepProbbase_level = "TRUE"
+insilico_CondProb = "NULL"
+insilico_CondProbNum = "NULL"
+insilico_datacheck = "TRUE"
+insilico_datacheck_missing = "TRUE"
+insilico_warning_write = "FALSE"
+insilico_external_sep = "TRUE"
+insilico_thin = "10"
+insilico_burnin = "2000"
+insilico_auto_length = "FALSE"
+insilico_conv_csmf = "0.02"
+insilico_jump_scale = "0.1"
+insilico_levels_prior = "NULL"
+insilico_levels_strength = "1"
+insilico_trunc_min = "1e-04"
+insilico_trunc_max = "0.9999"
+insilico_subpop = "NULL"
+insilico_java_option = '"-Xmx1g"'
+insilico_seed = "1"
+insilico_phy_code = "NULL"
+insilico_phy_cat = "NULL"
+insilico_phy_unknown = "NULL"
+insilico_phy_external = "NULL"
+insilico_phy_debias = "NULL"
+insilico_exclude_impossible_cause = "TRUE"
+insilico_indiv_CI = "NULL"
 
 ## InterVA
      # InterVA(Input, HIV, Malaria, directory = NULL, filename = "VA_result",
@@ -172,33 +179,33 @@ inSilicoVA_indiv_CI = "NULL"
      #   replicate = FALSE, replicate.bug1 = FALSE, replicate.bug2 = FALSE,
      #   write = TRUE)
 #### Required Args: Input, HIV, Malaria
-InterVA_directory      = "NULL"
-InterVA_filename       = "VA_result"
-InterVA_output         = "classic"
-InterVA_append         = "FALSE"
-InterVA_groupcode      = "FALSE"
-InterVA_Replicate      = "FALSE"
-InterVA_Replicate.bug1 = "FALSE"
-InterVA_Replicate.bug2 = "FALSE"
-InterVA_Write          = "TRUE"
+interVA_directory      = "NULL"
+interVA_filename       = '"VA_result"'
+interVA_output         = '"classic"'
+interVA_append         = "FALSE"
+interVA_groupcode      = "FALSE"
+interVA_replicate      = "FALSE"
+interVA_replicate_bug1 = "FALSE"
+interVA_replicate_bug2 = "FALSE"
+interVA_write          = "TRUE"
 
 ## Naive Bayes Classifier
      # nbc(train, test, known = TRUE)
 #### Required Args: train, test
-NBC_KNOWN = "TRUE"
+nbc_known = "TRUE"
 
 ## Tariff
      # tariff(causes.train, symps.train, symps.test, causes.table = NULL,
      #   use.rank = TRUE, nboot.rank = 1, use.sig = TRUE, nboot.sig = 500,
      #   use.top = FALSE, ntop = 40)
 #### Required Args: causes.train, symps.train, symps.test
-Tariff_causes_table = "NULL"
-Tariff_use_rank = "TRUE"
-Tariff_nboot_rank = 1
-Tariff_use_sig = "TRUE"
-Tariff_nboot_sig = 500
-Tariff_use_top = "FALSE"
-Tariff_ntop = 40
+tariff_causes_table = "NULL"
+tariff_use_rank = "TRUE"
+tariff_nboot_rank = "1"
+tariff_use_sig = "TRUE"
+tariff_nboot_sig = "500"
+tariff_use_top = "FALSE"
+tariff_ntop = "40"
 
 
 #Check if Processing Directory exists and create if necessary
@@ -342,12 +349,65 @@ else:
         f = open(rScriptIn, "wb")
         f.write("library(openVA); library(CrossVA) \n")
         f.write("getwd() \n")
-        f.write("data <- read.csv(\"" + openVAReadyFile + "\") \n")
+        # f.write("data <- read.csv(\"" + openVAReadyFile + "\") \n")
         # f.write("data")
-        f.write("codeVA(data=data," + "data.type=" + DataType + ", model=" + Model + ", \n")
+        f.write("data(RandomVA3); test <- RandomVA3[1:200, ]; train <- RandomVA3[201:400, ]; \n")
+        f.write("out <- codeVA(data=test, " + "data.type=" + DataType + ", model=" + Model + ", \n")
         f.write("\t data.train=" + DataTrain + ", causes.train=" + CausesTrain + ", \n")
-        f.write("\t Nsim=" + NSim + "auto.length" auto.length + ", \n")        
+        ## insilico
+        f.write("\t Nsim=" + insilico_Nsim + ", \n")        
+        f.write("\t isNumeric=" + insilico_isNumeric + ", \n")
+        f.write("\t updateCondProb=" + insilico_updateCondProb + ", \n")
+        f.write("\t keepProbbase.level=" + insilico_keepProbbase_level + ", \n")
+        f.write("\t CondProb=" + insilico_CondProb + ", \n")
+        f.write("\t CondProbNum=" + insilico_CondProbNum + ", \n")
+        f.write("\t datacheck=" + insilico_datacheck + ", \n")
+        f.write("\t datacheck.missing=" + insilico_datacheck_missing + ", \n")
+        f.write("\t warning.write=" + insilico_warning_write + ", \n")
+        f.write("\t external.sep=" + insilico_external_sep + ", \n")
+        f.write("\t thin=" + insilico_thin + ", \n")
+        f.write("\t burnin=" + insilico_burnin + ", \n")
+        f.write("\t auto.length=" + insilico_auto_length + ", \n")
+        f.write("\t conv.csmf=" + insilico_conv_csmf + ", \n")
+        f.write("\t jump.scale=" + insilico_jump_scale + ", \n")
+        f.write("\t levels.prior=" + insilico_levels_prior + ", \n")
+        f.write("\t levels.strength=" + insilico_levels_strength + ", \n")
+        f.write("\t trunc.min=" + insilico_trunc_min + ", \n")
+        f.write("\t trunc.max=" + insilico_trunc_max + ", \n")
+        f.write("\t subpop=" + insilico_subpop + ", \n")
+        f.write("\t java.option=" + insilico_java_option + ", \n")
+        f.write("\t seed=" + insilico_seed + ", \n")
+        f.write("\t phy.code=" + insilico_phy_code + ", \n")
+        f.write("\t phy.cat=" + insilico_phy_cat + ", \n")
+        f.write("\t phy.unknown=" + insilico_phy_unknown + ", \n")
+        f.write("\t phy.external=" + insilico_phy_external + ", \n")
+        f.write("\t phy.debias=" + insilico_phy_debias + ", \n")
+        f.write("\t exclude.impossible.cause=" + insilico_exclude_impossible_cause + ", \n")
+        f.write("\t indiv.CI=" + insilico_indiv_CI + ", \n")
+        ## interVA
+        f.write("\t directory=" + interVA_directory + ", \n")
+        f.write("\t filename=" + interVA_filename + ", \n")
+        f.write("\t output=" + interVA_output + ", \n")
+        f.write("\t append=" + interVA_append + ", \n")
+        f.write("\t groupcode=" + interVA_groupcode + ", \n")
+        f.write("\t replicate=" + interVA_replicate + ", \n")
+        f.write("\t replicate.bug1=" + interVA_replicate_bug1 + ", \n")
+        f.write("\t replicate.bug2=" + interVA_replicate_bug2 + ", \n")
+        f.write("\t write=" + interVA_write + ", \n")
+        ## nbc
+        f.write("\t known=" + nbc_known + ", \n")
+        ## Tariff
+        f.write("\t causes.table=" + tariff_causes_table + ", \n")
+        f.write("\t use.rank=" + tariff_use_rank + ", \n")
+        f.write("\t nboot.rank=" + tariff_nboot_rank + ", \n")
+        f.write("\t use.sig=" + tariff_use_sig + ", \n")
+        f.write("\t nboot.sig=" + tariff_nboot_sig + ", \n")
+        f.write("\t use.top=" + tariff_use_top + ", \n")
+        f.write("\t ntop=" + tariff_ntop + ")")
         f.close()
+
+        ## HERE -- need to set up output
+
     except:
         sql = """INSERT INTO wp_SVA_EventLog(EventDesc,EventType) VALUES ('Could not create R Script File','Error')"""
         try:
