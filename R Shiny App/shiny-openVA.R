@@ -31,6 +31,9 @@ ui <- fluidPage(
             ## checkboxInput("defaultCondProb", "or click here to use the default", FALSE),
             h3("Choose your preferences"),
             br(),
+            checkboxInput("byAll", "Include an analysis of all records?", TRUE),
+            checkboxInput("bySex", "Include sex-specific results?", FALSE),
+            checkboxInput("byAge", "Include age-specific results (infant, child, adult)?", FALSE),
             selectInput(inputId="algorithm", label="Select Algorithm:",
                         choices=c("InSilico"="InSilicoVA", "InterVA4"="InterVA"),
                         ## choices=c("InSilico"="InSilicoVA", "InterVA4"="InterVA",
@@ -67,12 +70,19 @@ ui <- fluidPage(
             conditionalPanel("output.fileUploaded", actionButton("processMe", "Analyze my data!")),
             hr(),
             helpText("Downloads will be available once the data have been analyzed"),
-            downloadButton("downloadData1", "Download Summary for All Records as .csv"),
+            downloadButton("downloadData1", "Download Summary for All Records as .csv"), br(),
+            downloadButton("downloadPlot1", "Download Plot for All Records as .pdf"), br(),
             downloadButton("downloadData2", "Download Summary for Males as .csv"),
+            downloadButton("downloadPlot2", "Download Plot for Males as .pdf"), br(),
             downloadButton("downloadData3", "Download Summary for Females as .csv"),
+            downloadButton("downloadPlot3", "Download Plot for Females as .pdf"), br(),
             downloadButton("downloadData4", "Download Summary for Infants as .csv"),
+            downloadButton("downloadPlot4", "Download Plot for Infants as .pdf"), br(),
             downloadButton("downloadData5", "Download Summary for Children as .csv"),
-            downloadButton("downloadData6", "Download Summary for Adults as .csv")
+            downloadButton("downloadPlot5", "Download Plot for Children as .pdf"), br(),
+            downloadButton("downloadData6", "Download Summary for Adults as .csv"),
+            downloadButton("downloadPlot6", "Download Plot for Adults as .pdf"),
+            downloadButton("downloadWarnings", "Download warnings as .txt")
             ),
 
         ## Outputs
@@ -149,9 +159,24 @@ server <- function(input, output, session){
 
     observeEvent(input$processMe, {
 
+        shinyjs::disable("processMe")
+        shinyjs::disable("downloadData1")
+        shinyjs::disable("downloadData2")
+        shinyjs::disable("downloadData3")
+        shinyjs::disable("downloadData4")
+        shinyjs::disable("downloadData5")
+        shinyjs::disable("downloadData6")
+        shinyjs::disable("downloadPlot1")
+        shinyjs::disable("downloadPlot2")
+        shinyjs::disable("downloadPlot3")
+        shinyjs::disable("downloadPlot4")
+        shinyjs::disable("downloadPlot5")
+        shinyjs::disable("downloadPlot6")
+        shinyjs::disable("downloadWarnings")
+
         withProgress(value=0,{
 
-            setProgress(message = "Starting analysis of data \n (this may take a while)...")
+           setProgress(message = paste("Starting analysis of data (this may take a while)"))
 
             if(input$algorithm=="InSilicoVA"){
 
@@ -165,6 +190,7 @@ server <- function(input, output, session){
 
                 if( input$odkBC) records <- map_records2(getData(), mapping="insilicova")
                 if(!input$odkBC) records <- getData()
+                names(records) <- tolower(names(records))
 
                 male <- rep(FALSE, length(records$male))
                 male[records$male=="y"] <- TRUE
@@ -182,46 +208,129 @@ server <- function(input, output, session){
                 adult[records$elder  =="y"] <- TRUE
 
                 burn <- round(input$simLength / 2)
+                if(file.exists("warning_insilico.txt")) file.remove("warning_insilico.txt")
+                if(file.exists("InSilico-warnings.txt")) file.remove("InSilico-warnings.txt")
+                file.create("InSilico-warnings.txt")
+                cat("Warnings and Errors from InSilico \t", date(), "\n", file="InSilico-warnings.txt")
 
-                incProgress(.01, detail=paste("Analysis with all cases"))
-                rv$fitAll     <- insilico(records, Nsim = isolate(input$simLength), burnin = burn)
-                shinyjs::enable("downloadData1")
+                if(input$byAll){
+                    incProgress(.01, detail=paste("Analysis with all cases"))
+                    ## rv$fitAll     <- insilico(records, Nsim = isolate(input$simLength), burnin = burn)
+                    rv$fitAll <- do.call("codeVA", list(data=records, model="InSilicoVA",
+                                                        Nsim=input$simLength, burnin=burn, warning.write=TRUE))
+                    file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                    file.remove("warning_insilico.txt")
 
-                incProgress(.15, detail=paste("Analysis with Males"))
-                if(length(male[male])==0) rv$male <- NULL
-                if(length(male[male])>0){
-                    rv$fitMale <- insilico(records[male,], Nsim = isolate(input$simLength), burnin = burn)
-                    shinyjs::enable("downloadData2")
+                    shinyjs::enable("downloadData1")
+                    if(file.exists("plotAll.pdf")) file.remove("plotAll.pdf")
+                    plot(rv$fitAll, top=20)
+                    ggsave("plotAll.pdf", device="pdf")
+                    shinyjs::enable("downloadPlot1")
                 }
 
-                incProgress(.15, detail=paste("Analysis with Females"))
-                if(length(female[female])==0) rv$female <- NULL
-                if(length(female[female])>0){
-                    rv$fitFemale <- insilico(records[female,], Nsim = isolate(input$simLength), burnin = burn)
-                    shinyjs::enable("downloadData3")
-                }
+                if(input$bySex){
+                    incProgress(.15, detail=paste("Analysis with Males"))
+                    if(length(male[male])==0) rv$male <- NULL
+                    if(length(male[male])>0){
+                        ## rv$fitMale <- insilico(records[male,], Nsim = isolate(input$simLength), burnin = burn)
+                        try(rv$fitMale <- do.call("codeVA", list(data=records[male,], model="InSilicoVA",
+                                                                 Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
+                        if(!is.null(rv$fitMale)){
 
-                incProgress(.15, detail=paste("Analysis with Infants"))
-                if(length(infant[infant])==0) rv$infant <- NULL
-                if(length(infant[infant])>0){
-                    rv$fitInfant <- insilico(records[infant,], Nsim = isolate(input$simLength), burnin = burn)
-                    shinyjs::enable("downloadData4")
-                }
+                            cat("\n", "Warnings and Errors from Analysis for Males", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
+                            file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                            file.remove("warning_insilico.txt")
 
-                incProgress(.15, detail=paste("Analysis with Children"))
-                if(length(child[child])==0) rv$child <- NULL
-                if(length(child[child])>0){
-                    rv$fitChild <- insilico(records[child,], Nsim = isolate(input$simLength), burnin = burn)
-                    shinyjs::enable("downloadData5")
-                }
+                            shinyjs::enable("downloadData2")
+                            if(file.exists("plotMale.pdf")) file.remove("plotMale.pdf")
+                            plot(rv$fitMale, top=20); ggsave("plotMale.pdf", device="pdf")
+                            shinyjs::enable("downloadPlot2")
+                        }
+                    }
+                    if(is.null(rv$fitMale)) rv$male <- NULL
 
-                incProgress(.15, detail=paste("Analysis with Adults"))
-                if(length(adult[adult])==0) rv$adult <- NULL
-                if(length(adult[adult])>0){
-                    rv$fitAdult <- insilico(records[adult,], Nsim = isolate(input$simLength), burnin = burn)
-                    shinyjs::enable("downloadData6")
-                }
+                    incProgress(.15, detail=paste("Analysis with Females"))
+                    if(length(female[female])==0) rv$female <- NULL
+                    if(length(female[female])>0){
+                        ## rv$fitFemale <- insilico(records[female,], Nsim = isolate(input$simLength), burnin = burn)
+                        try(rv$fitFemale <- do.call("codeVA", list(data=records[female,], model="InSilicoVA",
+                                                                   Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
+                        if(!is.null(rv$fitFemale)){
 
+                            cat("\n", "Warnings and Errors from Analysis for Females", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
+                            file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                            file.remove("warning_insilico.txt")
+
+                            shinyjs::enable("downloadData3")
+                            if(file.exists("plotFemale.pdf")) file.remove("plotFemale.pdf")
+                            plot(rv$fitFemale, top=20); ggsave("plotFemale.pdf", device="pdf")
+                            shinyjs::enable("downloadPlot3")
+                        }
+                    }
+                    if(is.null(rv$fitFemale)) rv$female <- NULL
+                }
+                if(input$byAge){
+                    incProgress(.15, detail=paste("Analysis with Infants"))
+                    if(length(infant[infant])==0) rv$infant <- NULL
+                    if(length(infant[infant])>0){
+                        ## rv$fitInfant <- insilico(records[infant,], Nsim = isolate(input$simLength), burnin = burn)
+                        try(rv$fitInfant <- do.call("codeVA", list(data=records[infant,], model="InSilicoVA",
+                                                                   Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
+                        if(!is.null(rv$fitInfant)){
+
+                            cat("\n", "Warnings and Errors from Analysis for Infants", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
+                            file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                            file.remove("warning_insilico.txt")
+
+                            shinyjs::enable("downloadData4")
+                            if(file.exists("plotInfant.pdf")) file.remove("plotInfant.pdf")
+                            plot(rv$fitInfant, top=20); ggsave("plotInfant.pdf", device="pdf")
+                            shinyjs::enable("downloadPlot4")
+                        }
+                    }
+                    if(is.null(rv$fitInfant)) rv$infant <- NULL
+
+                    incProgress(.15, detail=paste("Analysis with Children"))
+                    if(length(child[child])==0) rv$child <- NULL
+                    if(length(child[child])>0){
+                        ## rv$fitChild <- insilico(records[child,], Nsim = isolate(input$simLength), burnin = burn)
+                        try(rv$fitChild <- do.call("codeVA", list(data=records[child,], model="InSilicoVA",
+                                                                  Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
+                        if(!is.null(rv$fitChild)){
+
+                            cat("\n", "Warnings and Errors from Analysis for Children", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
+                            file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                            file.remove("warning_insilico.txt")
+
+                            shinyjs::enable("downloadData5")
+                            if(file.exists("plotChild.pdf")) file.remove("plotChild.pdf")
+                            plot(rv$fitChild, top=20); ggsave("plotChild.pdf", device="pdf")
+                            shinyjs::enable("downloadPlot5")
+                        }
+                    }
+                    if(is.null(rv$fitChild)) rv$child <- NULL
+
+                    incProgress(.15, detail=paste("Analysis with Adults"))
+                    if(length(adult[adult])==0) rv$adult <- NULL
+                    if(length(adult[adult])>0){
+                        ## rv$fitAdult <- insilico(records[adult,], Nsim = isolate(input$simLength), burnin = burn)
+                        try(rv$fitAdult <- do.call("codeVA", list(data=records[adult,], model="InSilicoVA",
+                                                                  Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
+                        if(!is.null(rv$fitAdult)){
+
+                            cat("\n", "Warnings and Errors from Analysis for Adults", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
+                            file.append("InSilico-warnings.txt", "warning_insilico.txt")
+                            file.remove("warning_insilico.txt")
+
+                            shinyjs::enable("downloadData6")
+                            if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
+                            plot(rv$fitAdult, top=20); ggsave("plotAdult.pdf", device="pdf")
+                            shinyjs::enable("downloadPlot6")
+                        }
+                    }
+                    if(is.null(rv$fitAdult)) rv$adult <- NULL
+                }
+                shinyjs::enable("downloadWarnings")
                 rv$counts <- c(length(male[male]), length(female[female]),
                                length(infant[infant]), length(child[child]),
                                length(adult[adult]),
@@ -251,58 +360,129 @@ server <- function(input, output, session){
                 adult[records$MIDAGE =="y"] <- TRUE
                 adult[records$ELDER  =="y"] <- TRUE
 
-                incProgress(.01, detail=paste("Analysis with all cases"))
-                rv$fitAll     <- InterVA(Input=records, HIV=input$HIV, Malaria=input$Malaria)
-                rv$resultsAll <- read.csv("VA_result.csv")
-                shinyjs::enable("downloadData1")
+                if(file.exists("InterVA-warnings.txt")) file.remove("InterVA-warnings.txt")
+                file.create("Interva-warnings.txt")
+                cat("Warnings and Errors from Interva \t", date(), "\n", file="Interva-warnings.txt")
 
-                incProgress(.15, detail=paste("Analysis with Males"))
-                if(length(male[male])==0) rv$male <- NULL
-                if(length(male[male])>0){
-                    rv$fitMale     <- InterVA(Input=records[male,], HIV=input$HIV, Malaria=input$Malaria)
-                    rv$resultsMale <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData2")
+                if(input$byAll){
+                    incProgress(.01, detail=paste("Analysis with all cases"))
+                    rv$fitAll     <- InterVA(Input=records, HIV=input$HIV, Malaria=input$Malaria)
+                    rv$resultsAll <- read.csv("VA_result.csv")
+                    shinyjs::enable("downloadData1")
+                    if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
+                    pdf("plotAll.pdf");CSMF(rv$fitAll, top.plot=20);dev.off()
+                    shinyjs::enable("downloadPlot1")
+
+                    cat("\n", "Warnings from Analysis for All Records", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                    file.append("InterVA-warnings.txt", "warnings.txt")
+                    cat("\n", "Errors from Analysis for All Records", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                    file.append("InterVA-warnings.txt", "errorlog.txt")
+                    file.remove("warnings.txt"); file.remove("errorlog.txt")
+                    file.remove("VA_result.csv")
                 }
 
-                incProgress(.15, detail=paste("Analysis with Females"))
-                if(length(female[female])==0) rv$female <- NULL
-                if(length(female[female])>0){
-                    ## rv$female <- TRUE
-                    rv$fitFemale     <- InterVA(Input=records[female,], HIV=input$HIV, Malaria=input$Malaria)
-                    rv$resultsFemale <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData3")
+                if(input$bySex){
+                    incProgress(.15, detail=paste("Analysis with Males"))
+                    if(length(male[male])==0) rv$male <- NULL
+                    if(length(male[male])>0){
+                        rv$fitMale     <- InterVA(Input=records[male,], HIV=input$HIV, Malaria=input$Malaria)
+                        rv$resultsMale <- read.csv("VA_result.csv")
+                        shinyjs::enable("downloadData2")
+                        if(file.exists("plotMale.pdf")) file.remove("plotMale.pdf")
+                        pdf("plotMale.pdf");CSMF(rv$fitMale, top.plot=20);dev.off()
+                        shinyjs::enable("downloadPlot2")
+
+                        cat("\n", "Warnings from Analysis for Males", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "warnings.txt")
+                        cat("\n", "Errors from Analysis for Males", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "errorlog.txt")
+                        file.remove("warnings.txt"); file.remove("errorlog.txt")
+                        file.remove("VA_result.csv")
+                    }
+                    if(is.null(rv$fitMale)) rv$male <- NULL
+
+                    incProgress(.15, detail=paste("Analysis with Females"))
+                    if(length(female[female])==0) rv$female <- NULL
+                    if(length(female[female])>0){
+                        ## rv$female <- TRUE
+                        rv$fitFemale     <- InterVA(Input=records[female,], HIV=input$HIV, Malaria=input$Malaria)
+                        rv$resultsFemale <- read.csv("VA_result.csv")
+                        shinyjs::enable("downloadData3")
+                        if(file.exists("plotFemale.pdf")) file.remove("plotFemale.pdf")
+                        pdf("plotFemale.pdf");CSMF(rv$fitFemale, top.plot=20);dev.off()
+                        shinyjs::enable("downloadPlot3")
+
+                        cat("\n", "Warnings from Analysis for Females", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "warnings.txt")
+                        cat("\n", "Errors from Analysis for Females", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "errorlog.txt")
+                        file.remove("warnings.txt"); file.remove("errorlog.txt")
+                        file.remove("VA_result.csv")
+                    }
+                    if(is.null(rv$fitFemale)) rv$female <- NULL
                 }
 
-                incProgress(.15, detail=paste("Analysis with Infants"))
-                if(length(infant[infant])==0) rv$infant <- NULL
-                if(length(infant[infant])>0){
-                    ## rv$infant <- TRUE
-                    rv$fitInfant     <- InterVA(Input=records[infant,], HIV=input$HIV, Malaria=input$Malaria)
-                    rv$resultsInfant <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData4")
-                }
+                if(input$byAge){
+                    incProgress(.15, detail=paste("Analysis with Infants"))
+                    if(length(infant[infant])==0) rv$infant <- NULL
+                    if(length(infant[infant])>0){
+                        ## rv$infant <- TRUE
+                        rv$fitInfant     <- InterVA(Input=records[infant,], HIV=input$HIV, Malaria=input$Malaria)
+                        rv$resultsInfant <- read.csv("VA_result.csv")
+                        shinyjs::enable("downloadData4")
+                        if(file.exists("plotInfant.pdf")) file.remove("plotInfant.pdf")
+                        pdf("plotInfant.pdf");CSMF(rv$fitInfant, top.plot=20);dev.off()
+                        shinyjs::enable("downloadPlot4")
 
-                incProgress(.15, detail=paste("Analysis with Children"))
-                if(length(child[child])==0) rv$child <- NULL
-                if(length(child[child])>0){
-                    ## rv$child <- TRUE
-                    rv$fitChild     <- InterVA(Input=records[child,], HIV=input$HIV, Malaria=input$Malaria)
-                    rv$resultsChild <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData5")
-                }
+                        cat("\n", "Warnings from Analysis for Infants", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "warnings.txt")
+                        cat("\n", "Errors from Analysis for Infants", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "errorlog.txt")
+                        file.remove("warnings.txt"); file.remove("errorlog.txt")
+                        file.remove("VA_result.csv")
+                    }
+                    if(is.null(rv$fitInfant)) rv$infant <- NULL
 
-                incProgress(.15, detail=paste("Analysis with Adults"))
-                if(length(adult[adult])==0) rv$adult <- NULL
-                if(length(adult[adult])>0){
-                    ## rv$adult <- TRUE
-                    rv$fitAdult     <- InterVA(Input=records[adult,], HIV=input$HIV, Malaria=input$Malaria)
-                    rv$resultsAdult <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData6")
-                }
+                    incProgress(.15, detail=paste("Analysis with Children"))
+                    if(length(child[child])==0) rv$child <- NULL
+                    if(length(child[child])>0){
+                        ## rv$child <- TRUE
+                        rv$fitChild     <- InterVA(Input=records[child,], HIV=input$HIV, Malaria=input$Malaria)
+                        rv$resultsChild <- read.csv("VA_result.csv")
+                        shinyjs::enable("downloadData5")
+                        if(file.exists("plotChild.pdf")) file.remove("plotChild.pdf")
+                        pdf("plotChild.pdf");CSMF(rv$fitChild, top.plot=20);dev.off()
+                        shinyjs::enable("downloadPlot5")
 
-                file.remove("errorlog.txt")
-                file.remove("warnings.txt")
-                file.remove("VA_result.csv")
+                        cat("\n", "Warnings from Analysis for Child", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "warnings.txt")
+                        cat("\n", "Errors from Analysis for Child", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "errorlog.txt")
+                        file.remove("warnings.txt"); file.remove("errorlog.txt")
+                        file.remove("VA_result.csv")
+                    }
+                    if(is.null(rv$fitChild)) rv$child <- NULL
+
+                    incProgress(.15, detail=paste("Analysis with Adults"))
+                    if(length(adult[adult])==0) rv$adult <- NULL
+                    if(length(adult[adult])>0){
+                        ## rv$adult <- TRUE
+                        rv$fitAdult     <- InterVA(Input=records[adult,], HIV=input$HIV, Malaria=input$Malaria)
+                        rv$resultsAdult <- read.csv("VA_result.csv")
+                        shinyjs::enable("downloadData6")
+                        if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
+                        pdf("plotAdult.pdf");CSMF(rv$fitAdult, top.plot=20);dev.off()
+                        shinyjs::enable("downloadPlot6")
+
+                        cat("\n", "Warnings from Analysis for Adults", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "warnings.txt")
+                        cat("\n", "Errors from Analysis for Adults", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
+                        file.append("InterVA-warnings.txt", "errorlog.txt")
+                        file.remove("warnings.txt"); file.remove("errorlog.txt")
+                        file.remove("VA_result.csv")
+                    }
+                    if(is.null(rv$fitAdult)) rv$adult <- NULL
+                }
 
                 rv$counts <- c(length(male[male]), length(female[female]),
                                length(infant[infant]), length(child[child]),
@@ -313,6 +493,7 @@ server <- function(input, output, session){
                                nrow(records))
             }
         })
+        shinyjs::enable("processMe")
     })
 
     ## Print warning messages -- HERE
@@ -339,34 +520,27 @@ server <- function(input, output, session){
     ## All
     #### Summarize and print output (all)
     output$titleSummaryAll <- renderText({
-        if(!is.null(rv$fitAll)){
+        ## if(!is.null(rv$fitAll)){
             "Summary of Results using All Records"
-        }
+        ## }
     })
     output$summaryAll <- renderPrint({
-        if(!is.null(rv$fitAll)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitAll)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitAll)) summary(rv$fitAll)
     })
 
     #### Create plot (all)
     output$titlePlotAll <- renderText({
-        if(!is.null(rv$fitAll)){
-            "CSMF for Total Population"
-        }
+        ## if(!is.null(rv$fitAll)){
+            "CSMF Plot for Total Population"
+        ## }
     })
     output$plotAll <- renderPlot({
         if(!is.null(rv$fitAll)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitAll$HIV)){
-                CSMF(rv$fitAll)
+                CSMF(rv$fitAll, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitAll$HIV)){
-                plot(rv$fitAll)
+                plot(rv$fitAll, top=20)
             }
         }
     })
@@ -374,220 +548,185 @@ server <- function(input, output, session){
     ## Male
     #### Summarize and print output (male)
     output$titleSummaryMale <- renderText({
-        if(!is.null(rv$fitMale)){
+        ## if(!is.null(rv$fitMale)){
             "Summary of Results for Males"
-        }
+        ## }
     })
     output$emptySummaryMale <- renderText({
         if(is.null(rv$male)){
-            "No Summary (no males in data set)"
+            "No Summary for Males (not enough deaths for analysis)"
         }
     })
     output$summaryMale <- renderPrint({
-        if(!is.null(rv$fitMale)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitMale)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitMale)) summary(rv$fitMale)
     })
 
     #### Create plot (male)
     output$titlePlotMale <- renderText({
-        if(!is.null(rv$fitMale)){
-            "CSMF for Males"
-        }
+        ## if(!is.null(rv$fitMale)){
+            "CSMF Plot for Males"
+        ## }
     })
     output$emptyPlotMale <- renderText({
         if(is.null(rv$male)){
-            "No Plot (no males in data set)"
+            "No Plot for Males (not enough deaths for analysis)"
         }
     })
     output$plotMale <- renderPlot({
         if(!is.null(rv$fitMale)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitMale$HIV)){
-                CSMF(rv$fitMale)
+                CSMF(rv$fitMale, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitMale$HIV)){
-                plot(rv$fitMale)
+                plot(rv$fitMale, top=20)
             }
         }
     })
     ## Female
     #### Summarize and print output (female)
     output$titleSummaryFemale <- renderText({
-        if(!is.null(rv$fitFemale)){
+        ## if(!is.null(rv$fitFemale)){
             "Summary of Results for Females"
-        }
+        ## }
     })
     output$emptySummaryFemale <- renderText({
         if(is.null(rv$female)){
-            "No Summary (no females in data set)"
+            "No Summary for Females (not enough deaths for analysis)"
         }
     })
     output$summaryFemale <- renderPrint({
-        if(!is.null(rv$fitFemale)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitFemale)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitFemale)) summary(rv$fitFemale)
     })
 
     #### Create plot (female)
     output$titlePlotFemale <- renderText({
-        if(!is.null(rv$fitFemale)){
-            "CSMF for Females"
-        }
+        ## if(!is.null(rv$fitFemale)){
+            "CSMF Plot for Females"
+        ## }
     })
     output$emptyPlotFemale <- renderText({
         if(is.null(rv$female)){
-            "No Plot (no females in data set)"
+            "No Plot for Females (not enough deaths for analysis)"
         }
     })
     output$plotFemale <- renderPlot({
         if(!is.null(rv$fitFemale)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitFemale$HIV)){
-                CSMF(rv$fitFemale)
+                CSMF(rv$fitFemale, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitFemale$HIV)){
-                plot(rv$fitFemale)
+                plot(rv$fitFemale, top=20)
             }
         }
     })
     ## Infant
     #### Summarize and print output
     output$titleSummaryInfant <- renderText({
-        if(!is.null(rv$fitInfant)){
+        ## if(!is.null(rv$fitInfant)){
             "Summary of Results for Infants"
-        }
+        ## }
     })
     output$emptySummaryInfant <- renderText({
         if(is.null(rv$infant)){
-            "No Summary (no infants in data set)"
+            "No Summary for Infants (not enough deaths for analysis)"
         }
     })
     output$summaryInfant <- renderPrint({
-        if(!is.null(rv$fitInfant)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitInfant)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitInfant)) summary(rv$fitInfant)
     })
 
     #### Create plot (infants)
     output$titlePlotInfant <- renderText({
-        if(!is.null(rv$fitInfant)){
-            "CSMF for Infants"
-        }
+        ## if(!is.null(rv$fitInfant)){
+            "CSMF Plot for Infants"
+        ## }
     })
     output$emptyPlotInfant <- renderText({
         if(is.null(rv$infant)){
-            "No Plot (no infants in data set)"
+            "No Plot for Infants (not enough deaths for analysis)"
         }
     })
     output$plotInfant <- renderPlot({
         if(!is.null(rv$fitInfant)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitInfant$HIV)){
-                CSMF(rv$fitInfant)
+                CSMF(rv$fitInfant, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                plot(rv$fitInfant)
+                plot(rv$fitInfant, top=20)
             }
         }
     })
     ## Child
     #### Summarize and print output
     output$titleSummaryChild <- renderText({
-        if(!is.null(rv$fitChild)){
+        ## if(!is.null(rv$fitChild)){
             "Summary of Results for Children"
-        }
+        ## }
     })
     output$emptySummaryChild <- renderText({
         if(is.null(rv$child)){
-            "No Summary (no children in data set)"
+            "No Summary for Children (not enough deaths for analysis)"
         }
     })
     output$summaryChild <- renderPrint({
-        if(!is.null(rv$fitChild)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitChild)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitChild)) summary(rv$fitChild)
     })
 
     #### Create plot (children)
     output$titlePlotChild <- renderText({
-        if(!is.null(rv$fitChild)){
-            "CSMF for Children"
-        }
+        ## if(!is.null(rv$fitChild)){
+            "CSMF Plot for Children"
+        ## }
     })
     output$emptyPlotChild <- renderText({
         if(is.null(rv$child)){
-            "No Plot (no children in data set)"
+            "No Plot for Children (not enough deaths for analysis)"
         }
     })
     output$plotChild <- renderPlot({
         if(!is.null(rv$fitChild)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitInfant$HIV)){
-                CSMF(rv$fitChild)
+                CSMF(rv$fitChild, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                plot(rv$fitChild)
+                plot(rv$fitChild, top=20)
             }
         }
     })
     ## Adult
     #### Summarize and print output
     output$titleSummaryAdult <- renderText({
-        if(!is.null(rv$fitAdult)){
+        ## if(!is.null(rv$fitAdult)){
             "Summary of Results for Adults"
-        }
+        ## }
     })
     output$emptySummaryAdult <- renderText({
         if(is.null(rv$adult)){
-            "No Summary (no adults in data set)"
+            "No Summary for Adults (not enough deaths for analysis)"
         }
     })
     output$summaryAdult <- renderPrint({
-        if(!is.null(rv$fitAdult)){
-            ## if(input$algorithm=="InSilicoVA" & is.null(rv$fit$HIV)){
-                summary(rv$fitAdult)
-            ## }
-            ## if(input$algorithm=="InterVA" & !is.null(rv$fit$HIV)){
-            ##     summary(rv$fit)
-            ## }
-        }
+        if(!is.null(rv$fitAdult)) summary(rv$fitAdult)
     })
 
     #### Create plot
     output$titlePlotAdult <- renderText({
-        if(!is.null(rv$fitAdult)){
-            "CSMF for Adults"
-        }
+        ## if(!is.null(rv$fitAdult)){
+            "CSMF Plot for Adults"
+        ## }
     })
     output$emptyPlotAdult <- renderText({
         if(is.null(rv$adult)){
-            "No Plot (no adults in data set)"
+            "No Plot for Adults (not enough deaths for analysis)"
         }
     })
     output$plotAdult <- renderPlot({
         if(!is.null(rv$fitAdult)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitAdult$HIV)){
-                CSMF(rv$fitAdult)
+                CSMF(rv$fitAdult, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitAdult$HIV)){
-                plot(rv$fitAdult)
+                plot(rv$fitAdult, top=20)
             }
         }
     })
@@ -606,10 +745,19 @@ server <- function(input, output, session){
             }
         }
     )
+    output$downloadPlot1 <- downloadHandler(
+        filename = "plotAll.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitAll)){
+                file.copy("plotAll.pdf", file)
+            }
+        }
+    )
     output$downloadData2 <- downloadHandler(
         filename = "resultsMale.csv",
         content = function(file) {
-            if (!is.null(rv$fitMale)){
+            ## if (!is.null(rv$fitMale)){
+            if (!is.null(rv$male)){
                 if(input$algorithm=="InterVA"){
                     write.csv(rv$resultsMale, file = file)
                 }
@@ -619,10 +767,19 @@ server <- function(input, output, session){
             }
         }
     )
+    output$downloadPlot2 <- downloadHandler(
+        filename = "plotMale.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitMale)){
+                file.copy("plotMale.pdf", file)
+            }
+        }
+    )
     output$downloadData3 <- downloadHandler(
         filename = "resultsFemale.csv",
         content = function(file) {
-            if (!is.null(rv$fitFemale)){
+            ## if (!is.null(rv$fitFemale)){
+            if (!is.null(rv$female)){
                 if(input$algorithm=="InterVA"){
                     write.csv(rv$resultsFemale, file = file)
                 }
@@ -632,10 +789,19 @@ server <- function(input, output, session){
             }
         }
     )
+    output$downloadPlot3 <- downloadHandler(
+        filename = "plotFemale.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitFemale)){
+                file.copy("plotFemale.pdf", file)
+            }
+        }
+    )
     output$downloadData4 <- downloadHandler(
         filename = "resultsInfant.csv",
         content = function(file) {
-            if (!is.null(rv$fitInfant)){
+            ## if (!is.null(rv$fitInfant)){
+            if (!is.null(rv$infant)){
                 if(input$algorithm=="InterVA"){
                     write.csv(rv$resultsInfant, file = file)
                 }
@@ -645,10 +811,19 @@ server <- function(input, output, session){
             }
         }
     )
+    output$downloadPlot4 <- downloadHandler(
+        filename = "plotInfant.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitInfant)){
+                file.copy("plotInfant.pdf", file)
+            }
+        }
+    )
     output$downloadData5 <- downloadHandler(
         filename = "resultsChild.csv",
         content = function(file) {
-            if (!is.null(rv$fitChild)){
+            ## if (!is.null(rv$fitChild)){
+            if (!is.null(rv$child)){
                 if(input$algorithm=="InterVA"){
                     write.csv(rv$resultsChild, file = file)
                 }
@@ -658,16 +833,45 @@ server <- function(input, output, session){
             }
         }
     )
+    output$downloadPlot5 <- downloadHandler(
+        filename = "plotChild.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitChild)){
+                file.copy("plotChild.pdf", file)
+            }
+        }
+    )
     output$downloadData6 <- downloadHandler(
         filename = "resultsAdult.csv",
         content = function(file) {
-            if (!is.null(rv$fitAdult)){
+            ## if (!is.null(rv$fitAdult)){
+            if (!is.null(rv$adult)){
                 if(input$algorithm=="InterVA"){
                     write.csv(rv$resultsAdult, file = file)
                 }
                 if(input$algorithm=="InSilicoVA"){
                     summary(rv$fitAdult, file = file)
                 }
+            }
+        }
+    )
+    output$downloadPlot6 <- downloadHandler(
+        filename = "plotAdult.pdf",
+        content = function(file) {
+            if (!is.null(rv$fitAdult)){
+                file.copy("plotAdult.pdf", file)
+            }
+        }
+    )
+
+    output$downloadWarnings <- downloadHandler(
+        filename = "warnings-openVA.txt",
+        content = function(file) {
+            if(input$algorithm=="InterVA"){
+                file.copy("InterVA-warnings.txt", file)
+            }
+            if(input$algorithm=="InSilicoVA"){
+                file.copy("InSilico-warnings.txt", file)
             }
         }
     )
@@ -679,7 +883,14 @@ server <- function(input, output, session){
     shinyjs::disable("downloadData4")
     shinyjs::disable("downloadData5")
     shinyjs::disable("downloadData6")
-
+    shinyjs::disable("downloadPlot1")
+    shinyjs::disable("downloadPlot2")
+    shinyjs::disable("downloadPlot3")
+    shinyjs::disable("downloadPlot4")
+    shinyjs::disable("downloadPlot5")
+    shinyjs::disable("downloadPlot6")
+    shinyjs::disable("downloadWarnings")
 }
 
 shinyApp(ui=ui, server=server)
+## shinyApp(ui=ui, server=server, option=list(port=5567))
