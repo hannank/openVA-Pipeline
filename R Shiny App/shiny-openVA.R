@@ -181,7 +181,7 @@ server <- function(input, output, session){
             if(input$algorithm=="InSilicoVA"){
 
                 ## if( input$odkBC) records <- map_records2(getData(), mapping="insilicova")
-                if( input$odkBC) records <- map_records(getData(), mapping="insilicova", cores=2)
+                if( input$odkBC) records <- map_records2(getData(), mapping="insilicova", cores=2)
                 if(!input$odkBC) records <- getData()
                 names(records) <- tolower(names(records))
 
@@ -216,7 +216,9 @@ server <- function(input, output, session){
 
                     shinyjs::enable("downloadData1")
                     if(file.exists("plotAll.pdf")) file.remove("plotAll.pdf")
-                    plot(rv$fitAll, top=20)
+                    ## plot(rv$fitAll, top=20)
+                    rv$agg.csmf <- get.indiv(rv$fitAll, data=records, CI = 0.95, is.aggregate=TRUE)
+                    indivplot(rv$agg.csmf, top = 20, title = "Aggregated COD distribution")
                     ggsave("plotAll.pdf", device="pdf")
                     shinyjs::enable("downloadPlot1")
                 }
@@ -236,7 +238,10 @@ server <- function(input, output, session){
 
                             shinyjs::enable("downloadData2")
                             if(file.exists("plotMale.pdf")) file.remove("plotMale.pdf")
-                            plot(rv$fitMale, top=20); ggsave("plotMale.pdf", device="pdf")
+                            ## plot(rv$fitMale, top=20); ggsave("plotMale.pdf", device="pdf")
+                            rv$agg.csmfMale <- get.indiv(rv$fitMale, data=records[male,], CI = 0.95, is.aggregate=TRUE)
+                            indivplot(rv$agg.csmfMale, top = 20, title = "Aggregated COD distribution")
+                            ggsave("plotMale.pdf", device="pdf")
                             shinyjs::enable("downloadPlot2")
                         }
                     }
@@ -256,7 +261,10 @@ server <- function(input, output, session){
 
                             shinyjs::enable("downloadData3")
                             if(file.exists("plotFemale.pdf")) file.remove("plotFemale.pdf")
-                            plot(rv$fitFemale, top=20); ggsave("plotFemale.pdf", device="pdf")
+                            ## plot(rv$fitFemale, top=20); ggsave("plotFemale.pdf", device="pdf")
+                            rv$agg.csmfFemale <- get.indiv(rv$fitFemale, data=records[female,], CI = 0.95, is.aggregate=TRUE)
+                            indivplot(rv$agg.csmfFemale, top = 20, title = "Aggregated COD distribution")
+                            ggsave("plotFemale.pdf", device="pdf")
                             shinyjs::enable("downloadPlot3")
                         }
                     }
@@ -277,7 +285,10 @@ server <- function(input, output, session){
 
                             shinyjs::enable("downloadData4")
                             if(file.exists("plotInfant.pdf")) file.remove("plotInfant.pdf")
-                            plot(rv$fitInfant, top=20); ggsave("plotInfant.pdf", device="pdf")
+                            ## plot(rv$fitInfant, top=20); ggsave("plotInfant.pdf", device="pdf")
+                            rv$agg.csmfInfant <- get.indiv(rv$fitInfant, data=records[infant,], CI = 0.95, is.aggregate=TRUE)
+                            indivplot(rv$agg.csmfInfant, top = 20, title = "Aggregated COD distribution")
+                            ggsave("plotInfant.pdf", device="pdf")
                             shinyjs::enable("downloadPlot4")
                         }
                     }
@@ -297,7 +308,10 @@ server <- function(input, output, session){
 
                             shinyjs::enable("downloadData5")
                             if(file.exists("plotChild.pdf")) file.remove("plotChild.pdf")
-                            plot(rv$fitChild, top=20); ggsave("plotChild.pdf", device="pdf")
+                            ## plot(rv$fitChild, top=20); ggsave("plotChild.pdf", device="pdf")
+                            rv$agg.csmfChild <- get.indiv(rv$fitChild, data=records[child,], CI = 0.95, is.aggregate=TRUE)
+                            indivplot(rv$agg.csmfChild, top = 20, title = "Aggregated COD distribution")
+                            ggsave("plotChild.pdf", device="pdf")
                             shinyjs::enable("downloadPlot5")
                         }
                     }
@@ -317,7 +331,10 @@ server <- function(input, output, session){
 
                             shinyjs::enable("downloadData6")
                             if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
-                            plot(rv$fitAdult, top=20); ggsave("plotAdult.pdf", device="pdf")
+                            ## plot(rv$fitAdult, top=20); ggsave("plotAdult.pdf", device="pdf")
+                            rv$agg.csmfAdult <- get.indiv(rv$fitAdult, data=records[adult,], CI = 0.95, is.aggregate=TRUE)
+                            indivplot(rv$agg.csmfAdult, top = 20, title = "Aggregated COD distribution")
+                            ggsave("plotAdult.pdf", device="pdf")
                             shinyjs::enable("downloadPlot6")
                         }
                     }
@@ -336,7 +353,7 @@ server <- function(input, output, session){
             if(input$algorithm=="InterVA"){
 
                 ## if( input$odkBC) records <- map_records2(getData(), mapping="interva4")
-                if( input$odkBC) records <- map_records(getData(), mapping="interva4", cores=2)
+                if( input$odkBC) records <- map_records2(getData(), mapping="interva4", cores=2)
                 if(!input$odkBC) records <- getData()
 
                 male <- rep(FALSE, length(records$MALE))
@@ -572,7 +589,8 @@ server <- function(input, output, session){
                 CSMF(rv$fitMale, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitMale$HIV)){
-                plot(rv$fitMale, top=20)
+                ## plot(rv$fitMale, top=20)
+                indivplot(rv$agg.csmfMale, top = 20, title = "Aggregated COD distribution")
             }
         }
     })
@@ -609,7 +627,8 @@ server <- function(input, output, session){
                 CSMF(rv$fitFemale, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitFemale$HIV)){
-                plot(rv$fitFemale, top=20)
+                ## plot(rv$fitFemale, top=20)
+                indivplot(rv$agg.csmfFemale, top = 20, title = "Aggregated COD distribution")
             }
         }
     })
@@ -646,7 +665,8 @@ server <- function(input, output, session){
                 CSMF(rv$fitInfant, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                plot(rv$fitInfant, top=20)
+                ## plot(rv$fitInfant, top=20)
+                indivplot(rv$agg.csmfInfant, top = 20, title = "Aggregated COD distribution")
             }
         }
     })
@@ -683,7 +703,8 @@ server <- function(input, output, session){
                 CSMF(rv$fitChild, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                plot(rv$fitChild, top=20)
+                ## plot(rv$fitChild, top=20)
+                indivplot(rv$agg.csmfChild, top = 20, title = "Aggregated COD distribution")
             }
         }
     })
@@ -720,7 +741,8 @@ server <- function(input, output, session){
                 CSMF(rv$fitAdult, top.plot=20)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitAdult$HIV)){
-                plot(rv$fitAdult, top=20)
+                ## plot(rv$fitAdult, top=20)
+                indivplot(rv$agg.csmfAdult, top = 20, title = "Aggregated COD distribution")
             }
         }
     })
