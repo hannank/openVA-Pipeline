@@ -180,15 +180,8 @@ server <- function(input, output, session){
 
             if(input$algorithm=="InSilicoVA"){
 
-                #get the optional, user-provided cond prob
-                ## userBase <- isolate(input$customProbbase)
-                ## if (is.null(userBase) | isolate(input$defaultCondProb)) {
-                ##     userBase = NULL
-                ## } else {
-                ##     userBase = read.csv(userBase$datapath)
-                ## }
-
-                if( input$odkBC) records <- map_records2(getData(), mapping="insilicova")
+                ## if( input$odkBC) records <- map_records2(getData(), mapping="insilicova")
+                if( input$odkBC) records <- map_records(getData(), mapping="insilicova", cores=2)
                 if(!input$odkBC) records <- getData()
                 names(records) <- tolower(names(records))
 
@@ -342,7 +335,8 @@ server <- function(input, output, session){
 
             if(input$algorithm=="InterVA"){
 
-                if( input$odkBC) records <- map_records2(getData(), mapping="interva4")
+                ## if( input$odkBC) records <- map_records2(getData(), mapping="interva4")
+                if( input$odkBC) records <- map_records(getData(), mapping="interva4", cores=2)
                 if(!input$odkBC) records <- getData()
 
                 male <- rep(FALSE, length(records$MALE))
