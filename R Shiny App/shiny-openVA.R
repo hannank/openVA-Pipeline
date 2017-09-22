@@ -5,6 +5,34 @@ library(CrossVA)
 
 options(shiny.maxRequestSize=30*1024^2)
 
+indivCOD <- function(x, top=3){
+
+    probs <- getIndivProb(x)
+    cods  <- colnames(probs)
+
+    out <- matrix(NA, nrow=nrow(probs), ncol=top*2)
+
+    for(i in 1:nrow(probs)){
+        probsOrdered <- order(probs[i,], decreasing=TRUE)
+        newTop <- top
+        if(length(unique(probsOrdered)) <= top) newTop = (top-1)
+        if(newTop < 1){
+            cat("Error: not enough unique causes \n")
+            next
+        }
+        for(j in 1:newTop){
+            k <- seq(1, top*2, by=2)[j]
+            out[i,k  ] <- cods[probsOrdered[j]]
+            out[i,k+1] <- round(probs[i, probsOrdered[j]],4)
+        }
+    }
+    out <- cbind(rownames(probs), out)
+    colnames(out) <- c("ID", "Most Likely Cause", "Probability",
+                       "Second Most Likely Cause", "Probability",
+                       "Third Most Likely Cause", "Probability")
+    out
+}
+
 ui <- fluidPage(
 
     titlePanel("Probabilistic Cause-of-death Assignment using Verbal Autopsies"),
@@ -70,18 +98,30 @@ ui <- fluidPage(
             conditionalPanel("output.fileUploaded", actionButton("processMe", "Analyze my data!")),
             hr(),
             helpText("Downloads will be available once the data have been analyzed"),
+            downloadButton("downloadCOD1", "Download Causes for All Records as .csv"), br(),
             downloadButton("downloadData1", "Download Summary for All Records as .csv"), br(),
-            downloadButton("downloadPlot1", "Download Plot for All Records as .pdf"), br(),
+            downloadButton("downloadPlot1", "Download Plot for All Records as .pdf"), br(), br(),
+            ##
+            downloadButton("downloadCOD2", "Download Causes for all Males as .csv"), br(),
             downloadButton("downloadData2", "Download Summary for Males as .csv"),
-            downloadButton("downloadPlot2", "Download Plot for Males as .pdf"), br(),
+            downloadButton("downloadPlot2", "Download Plot for Males as .pdf"), br(), br(),
+            ##
+            downloadButton("downloadCOD3", "Download Causes for all Females as .csv"), br(),
             downloadButton("downloadData3", "Download Summary for Females as .csv"),
-            downloadButton("downloadPlot3", "Download Plot for Females as .pdf"), br(),
+            downloadButton("downloadPlot3", "Download Plot for Females as .pdf"), br(), br(),
+            ##
+            downloadButton("downloadCOD4", "Download  Causes for all Infants as .csv"), br(),
             downloadButton("downloadData4", "Download Summary for Infants as .csv"),
-            downloadButton("downloadPlot4", "Download Plot for Infants as .pdf"), br(),
+            downloadButton("downloadPlot4", "Download Plot for Infants as .pdf"), br(), br(),
+            ##
+            downloadButton("downloadCOD5", "Download Causes for all Children as .csv"), br(),
             downloadButton("downloadData5", "Download Summary for Children as .csv"),
-            downloadButton("downloadPlot5", "Download Plot for Children as .pdf"), br(),
+            downloadButton("downloadPlot5", "Download Plot for Children as .pdf"), br(), br(),
+            ##
+            downloadButton("downloadCOD6", "Download Causes for all Adults as .csv"), br(),
             downloadButton("downloadData6", "Download Summary for Adults as .csv"),
-            downloadButton("downloadPlot6", "Download Plot for Adults as .pdf"),
+            downloadButton("downloadPlot6", "Download Plot for Adults as .pdf"), br(), br(),
+            ##
             downloadButton("downloadWarnings", "Download warnings as .txt")
             ),
 
@@ -148,6 +188,13 @@ server <- function(input, output, session){
     })
     outputOptions(output, "fileUploaded", suspendWhenHidden=FALSE)
 
+    selectedAlgorithm <- reactive({
+        switch(input$algorithm,
+               "InSilicoVA"=1, "InterVA"=2)
+    })
+    ## choices=c("InSilico"="InSilicoVA", "InterVA4"="InterVA"),
+
+
     ## Run model
     rv <- reactiveValues()
     rv$male   <- TRUE
@@ -160,6 +207,13 @@ server <- function(input, output, session){
     observeEvent(input$processMe, {
 
         shinyjs::disable("processMe")
+        shinyjs::disable("algorithm")
+        shinyjs::disable("downloadCOD1")
+        shinyjs::disable("downloadCOD2")
+        shinyjs::disable("downloadCOD3")
+        shinyjs::disable("downloadCOD4")
+        shinyjs::disable("downloadCOD5")
+        shinyjs::disable("downloadCOD6")
         shinyjs::disable("downloadData1")
         shinyjs::disable("downloadData2")
         shinyjs::disable("downloadData3")
@@ -211,16 +265,45 @@ server <- function(input, output, session){
                     ## rv$fitAll     <- insilico(records, Nsim = isolate(input$simLength), burnin = burn)
                     rv$fitAll <- do.call("codeVA", list(data=records, model="InSilicoVA",
                                                         Nsim=input$simLength, burnin=burn, warning.write=TRUE))
+                    rv$indivCODAll <- indivCOD(rv$fitAll, top=3)
+
                     file.append("InSilico-warnings.txt", "warning_insilico.txt")
                     file.remove("warning_insilico.txt")
-
-                    shinyjs::enable("downloadData1")
                     if(file.exists("plotAll.pdf")) file.remove("plotAll.pdf")
-                    ## plot(rv$fitAll, top=20)
-                    rv$agg.csmf <- get.indiv(rv$fitAll, data=records, CI = 0.95, is.aggregate=TRUE)
-                    indivplot(rv$agg.csmf, top = 20, title = "Aggregated COD distribution")
-                    ggsave("plotAll.pdf", device="pdf")
+                    plot(rv$fitAll, top=20); ggsave("plotAll.pdf", device="pdf")
+                    ## rv$agg.csmf <- get.indiv(rv$fitAll, data=records, CI = 0.95, is.aggregate=TRUE)
+                    ## indivplot(rv$agg.csmf, top = 20, title = "Aggregated COD distribution")
+                    ## ggsave("plotAll.pdf", device="pdf")
+                    output$downloadPlot1 <- downloadHandler(
+                        filename = "plotAll.pdf",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                file.copy("plotAll.pdf", file)
+                            }
+                        }
+                    )
                     shinyjs::enable("downloadPlot1")
+
+                    output$downloadCOD1 <- downloadHandler(
+                        filename = "individual-causes-All.csv",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                write.csv(rv$indivCODAll, file=file, row.names=FALSE)
+                            }
+                        }
+                    )
+                    shinyjs::enable("downloadCOD1")
+
+                    output$downloadData1 <- downloadHandler(
+                        filename = "resultsAll.csv",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                ## summary(rv$fitAll, file=file)
+                                write.csv(print(summary(rv$fitAll, top=20)), file=file)
+                            }
+                        }
+                    )
+                    shinyjs::enable("downloadData1")
                 }
 
                 if(input$bySex){
@@ -232,17 +315,46 @@ server <- function(input, output, session){
                                                                  Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
                         if(!is.null(rv$fitMale)){
 
+                            rv$indivCODMale <- indivCOD(rv$fitMale, top=3)
+
                             cat("\n", "Warnings and Errors from Analysis for Males", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
                             file.append("InSilico-warnings.txt", "warning_insilico.txt")
                             file.remove("warning_insilico.txt")
-
-                            shinyjs::enable("downloadData2")
                             if(file.exists("plotMale.pdf")) file.remove("plotMale.pdf")
-                            ## plot(rv$fitMale, top=20); ggsave("plotMale.pdf", device="pdf")
-                            rv$agg.csmfMale <- get.indiv(rv$fitMale, data=records[male,], CI = 0.95, is.aggregate=TRUE)
-                            indivplot(rv$agg.csmfMale, top = 20, title = "Aggregated COD distribution")
-                            ggsave("plotMale.pdf", device="pdf")
+                            plot(rv$fitMale, top=20); ggsave("plotMale.pdf", device="pdf")
+                            ## rv$agg.csmfMale <- get.indiv(rv$fitMale, data=records[male,], CI = 0.95, is.aggregate=TRUE)
+                            ## indivplot(rv$agg.csmfMale, top = 20, title = "Aggregated COD distribution")
+                            ## ggsave("plotMale.pdf", device="pdf")
+                            output$downloadPlot2 <- downloadHandler(
+                                filename = "plotMale.pdf",
+                                content = function(file) {
+                                    if(!is.null(rv$fitMale)){
+                                        file.copy("plotMale.pdf", file)
+                                    }
+                                }
+                            )
                             shinyjs::enable("downloadPlot2")
+
+                            output$downloadCOD2 <- downloadHandler(
+                                filename = "individual-causes-Males.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitMale)){
+                                        write.csv(rv$indivCODMale, file=file, row.names=FALSE)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadCOD2")
+
+                            output$downloadData2 <- downloadHandler(
+                                filename = "resultsMales.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitMale)){
+                                        ## summary(rv$fitMale, file=file)
+                                        write.csv(print(summary(rv$fitMale, top=20)), file=file)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadData2")
                         }
                     }
                     if(is.null(rv$fitMale)) rv$male <- NULL
@@ -255,17 +367,47 @@ server <- function(input, output, session){
                                                                    Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
                         if(!is.null(rv$fitFemale)){
 
+                            rv$indivCODFemale <- indivCOD(rv$fitFemale, top=3)
+
                             cat("\n", "Warnings and Errors from Analysis for Females", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
                             file.append("InSilico-warnings.txt", "warning_insilico.txt")
                             file.remove("warning_insilico.txt")
 
-                            shinyjs::enable("downloadData3")
                             if(file.exists("plotFemale.pdf")) file.remove("plotFemale.pdf")
-                            ## plot(rv$fitFemale, top=20); ggsave("plotFemale.pdf", device="pdf")
-                            rv$agg.csmfFemale <- get.indiv(rv$fitFemale, data=records[female,], CI = 0.95, is.aggregate=TRUE)
-                            indivplot(rv$agg.csmfFemale, top = 20, title = "Aggregated COD distribution")
-                            ggsave("plotFemale.pdf", device="pdf")
+                            plot(rv$fitFemale, top=20); ggsave("plotFemale.pdf", device="pdf")
+                            ## rv$agg.csmfFemale <- get.indiv(rv$fitFemale, data=records[female,], CI = 0.95, is.aggregate=TRUE)
+                            ## indivplot(rv$agg.csmfFemale, top = 20, title = "Aggregated COD distribution")
+                            ## ggsave("plotFemale.pdf", device="pdf")
+                            output$downloadPlot3 <- downloadHandler(
+                                filename = "plotFemale.pdf",
+                                content = function(file) {
+                                    if(!is.null(rv$fitFemale)){
+                                        file.copy("plotFemale.pdf", file)
+                                    }
+                                }
+                            )
                             shinyjs::enable("downloadPlot3")
+
+                            output$downloadCOD3 <- downloadHandler(
+                                filename = "individual-causes-Females.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitFemale)){
+                                        write.csv(rv$indivCODFemale, file=file, row.names=FALSE)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadCOD3")
+
+                            output$downloadData3 <- downloadHandler(
+                                filename = "resultsFemales.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitFemale)){
+                                        ## summary(rv$fitFemale, file=file)
+                                        write.csv(print(summary(rv$fitFemale, top=20)), file=file)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadData3")
                         }
                     }
                     if(is.null(rv$fitFemale)) rv$female <- NULL
@@ -279,17 +421,46 @@ server <- function(input, output, session){
                                                                    Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
                         if(!is.null(rv$fitInfant)){
 
+                            rv$indivCODInfant <- indivCOD(rv$fitInfant, top=3)
+
                             cat("\n", "Warnings and Errors from Analysis for Infants", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
                             file.append("InSilico-warnings.txt", "warning_insilico.txt")
                             file.remove("warning_insilico.txt")
-
-                            shinyjs::enable("downloadData4")
                             if(file.exists("plotInfant.pdf")) file.remove("plotInfant.pdf")
-                            ## plot(rv$fitInfant, top=20); ggsave("plotInfant.pdf", device="pdf")
-                            rv$agg.csmfInfant <- get.indiv(rv$fitInfant, data=records[infant,], CI = 0.95, is.aggregate=TRUE)
-                            indivplot(rv$agg.csmfInfant, top = 20, title = "Aggregated COD distribution")
-                            ggsave("plotInfant.pdf", device="pdf")
+                            plot(rv$fitInfant, top=20); ggsave("plotInfant.pdf", device="pdf")
+                            ## rv$agg.csmfInfant <- get.indiv(rv$fitInfant, data=records[infant,], CI = 0.95, is.aggregate=TRUE)
+                            ## indivplot(rv$agg.csmfInfant, top = 20, title = "Aggregated COD distribution")
+                            ## ggsave("plotInfant.pdf", device="pdf")
+                            output$downloadPlot4 <- downloadHandler(
+                                filename = "plotInfant.pdf",
+                                content = function(file) {
+                                    if(!is.null(rv$fitInfant)){
+                                        file.copy("plotInfant.pdf", file)
+                                    }
+                                }
+                            )
                             shinyjs::enable("downloadPlot4")
+
+                            output$downloadCOD4 <- downloadHandler(
+                                filename = "individual-causes-Infants.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitInfant)){
+                                        write.csv(rv$indivCODInfant, file=file, row.names=FALSE)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadCOD4")
+
+                            output$downloadData4 <- downloadHandler(
+                                filename = "resultsInfants.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitInfant)){
+                                        ## summary(rv$fitInfant, file=file)
+                                        write.csv(print(summary(rv$fitInfant, top=20)), file=file)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadData4")
                         }
                     }
                     if(is.null(rv$fitInfant)) rv$infant <- NULL
@@ -302,17 +473,46 @@ server <- function(input, output, session){
                                                                   Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
                         if(!is.null(rv$fitChild)){
 
+                            rv$indivCODChild <- indivCOD(rv$fitChild, top=3)
+
                             cat("\n", "Warnings and Errors from Analysis for Children", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
                             file.append("InSilico-warnings.txt", "warning_insilico.txt")
                             file.remove("warning_insilico.txt")
-
-                            shinyjs::enable("downloadData5")
                             if(file.exists("plotChild.pdf")) file.remove("plotChild.pdf")
-                            ## plot(rv$fitChild, top=20); ggsave("plotChild.pdf", device="pdf")
-                            rv$agg.csmfChild <- get.indiv(rv$fitChild, data=records[child,], CI = 0.95, is.aggregate=TRUE)
-                            indivplot(rv$agg.csmfChild, top = 20, title = "Aggregated COD distribution")
-                            ggsave("plotChild.pdf", device="pdf")
+                            plot(rv$fitChild, top=20); ggsave("plotChild.pdf", device="pdf")
+                            ## rv$agg.csmfChild <- get.indiv(rv$fitChild, data=records[child,], CI = 0.95, is.aggregate=TRUE)
+                            ## indivplot(rv$agg.csmfChild, top = 20, title = "Aggregated COD distribution")
+                            ## ggsave("plotChild.pdf", device="pdf")
+                            output$downloadPlot5 <- downloadHandler(
+                                filename = "plotChild.pdf",
+                                content = function(file) {
+                                    if(!is.null(rv$fitChild)){
+                                        file.copy("plotChild.pdf", file)
+                                    }
+                                }
+                            )
                             shinyjs::enable("downloadPlot5")
+
+                            output$downloadCOD5 <- downloadHandler(
+                                filename = "individual-causes-Children.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitChild) & !is.null(rv$child)){
+                                        write.csv(rv$indivCODChild, file=file, row.names=FALSE)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadCOD5")
+
+                            output$downloadData5 <- downloadHandler(
+                                filename = "resultsChildren.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitChild)){
+                                        ## summary(rv$fitChild, file=file)
+                                        write.csv(print(summary(rv$fitChild, top=20)), file=file)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadData5")
                         }
                     }
                     if(is.null(rv$fitChild)) rv$child <- NULL
@@ -325,17 +525,47 @@ server <- function(input, output, session){
                                                                   Nsim=isolate(input$simLength), burnin=burn, warning.write=TRUE)))
                         if(!is.null(rv$fitAdult)){
 
+                            rv$indivCODAdult <- indivCOD(rv$fitAdult, top=3)
+
                             cat("\n", "Warnings and Errors from Analysis for Adults", date(), "\n", file="InSilico-warnings.txt", append=TRUE)
                             file.append("InSilico-warnings.txt", "warning_insilico.txt")
                             file.remove("warning_insilico.txt")
 
-                            shinyjs::enable("downloadData6")
                             if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
-                            ## plot(rv$fitAdult, top=20); ggsave("plotAdult.pdf", device="pdf")
-                            rv$agg.csmfAdult <- get.indiv(rv$fitAdult, data=records[adult,], CI = 0.95, is.aggregate=TRUE)
-                            indivplot(rv$agg.csmfAdult, top = 20, title = "Aggregated COD distribution")
-                            ggsave("plotAdult.pdf", device="pdf")
+                            plot(rv$fitAdult, top=20); ggsave("plotAdult.pdf", device="pdf")
+                            ## rv$agg.csmfAdult <- get.indiv(rv$fitAdult, data=records[adult,], CI = 0.95, is.aggregate=TRUE)
+                            ## indivplot(rv$agg.csmfAdult, top = 20, title = "Aggregated COD distribution")
+                            ## ggsave("plotAdult.pdf", device="pdf")
+                            output$downloadPlot6 <- downloadHandler(
+                                filename = "plotAdult.pdf",
+                                content = function(file) {
+                                    if(!is.null(rv$fitAdult)){
+                                        file.copy("plotAdult.pdf", file)
+                                    }
+                                }
+                            )
                             shinyjs::enable("downloadPlot6")
+
+                            output$downloadCOD6 <- downloadHandler(
+                                filename = "individual-causes-Adults.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitAdult)){
+                                        write.csv(rv$indivCODAdult, file=file, row.names=FALSE)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadCOD6")
+
+                            output$downloadData6 <- downloadHandler(
+                                filename = "resultsAdults.csv",
+                                content = function(file) {
+                                    if(!is.null(rv$fitAdult)){
+                                        ## summary(rv$fitAdult, file=file)
+                                        write.csv(print(summary(rv$fitAdult, top=20)), file=file)
+                                    }
+                                }
+                            )
+                            shinyjs::enable("downloadData6")
                         }
                     }
                     if(is.null(rv$fitAdult)) rv$adult <- NULL
@@ -372,16 +602,24 @@ server <- function(input, output, session){
                 adult[records$ELDER  =="y"] <- TRUE
 
                 if(file.exists("InterVA-warnings.txt")) file.remove("InterVA-warnings.txt")
-                file.create("Interva-warnings.txt")
-                cat("Warnings and Errors from Interva \t", date(), "\n", file="Interva-warnings.txt")
+                file.create("InterVA-warnings.txt")
+                cat("Warnings and Errors from InterVA \t", date(), "\n", file="InterVA-warnings.txt")
 
                 if(input$byAll){
                     incProgress(.01, detail=paste("Analysis with all cases"))
                     rv$fitAll     <- InterVA(Input=records, HIV=input$HIV, Malaria=input$Malaria)
                     rv$resultsAll <- read.csv("VA_result.csv")
-                    shinyjs::enable("downloadData1")
-                    if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
-                    pdf("plotAll.pdf");CSMF(rv$fitAll, top.plot=20);dev.off()
+
+                    if(file.exists("plotAll.pdf")) file.remove("plotAll.pdf")
+                    pdf("plotAll.pdf");CSMF(rv$fitAll, top.plot=20, InterVA.rule=TRUE, min.prob=.001);dev.off()
+                    output$downloadPlot1 <- downloadHandler(
+                        filename = "plotAll.pdf",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                file.copy("plotAll.pdf", file)
+                            }
+                        }
+                    )
                     shinyjs::enable("downloadPlot1")
 
                     cat("\n", "Warnings from Analysis for All Records", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -390,6 +628,26 @@ server <- function(input, output, session){
                     file.append("InterVA-warnings.txt", "errorlog.txt")
                     file.remove("warnings.txt"); file.remove("errorlog.txt")
                     file.remove("VA_result.csv")
+
+                    output$downloadCOD1 <- downloadHandler(
+                        filename = "individual-causes-All.csv",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                write.csv(rv$resultsAll, file=file, row.names=FALSE)
+                            }
+                        }
+                    )
+                    shinyjs::enable("downloadCOD1")
+
+                    output$downloadData1 <- downloadHandler(
+                        filename = "resultsAll.csv",
+                        content = function(file) {
+                            if(!is.null(rv$fitAll)){
+                                write.csv(print(summary(rv$fitAll, top=20)), file=file, row.names=FALSE)
+                            }
+                        }
+                    )
+                    shinyjs::enable("downloadData1")
                 }
 
                 if(input$bySex){
@@ -398,9 +656,17 @@ server <- function(input, output, session){
                     if(length(male[male])>0){
                         rv$fitMale     <- InterVA(Input=records[male,], HIV=input$HIV, Malaria=input$Malaria)
                         rv$resultsMale <- read.csv("VA_result.csv")
-                        shinyjs::enable("downloadData2")
+
                         if(file.exists("plotMale.pdf")) file.remove("plotMale.pdf")
-                        pdf("plotMale.pdf");CSMF(rv$fitMale, top.plot=20);dev.off()
+                        pdf("plotMale.pdf");CSMF(rv$fitMale, top.plot=20, InterVA.rule=TRUE, min.prob=.001);dev.off()
+                        output$downloadPlot2 <- downloadHandler(
+                            filename = "plotMale.pdf",
+                            content = function(file) {
+                                if(!is.null(rv$fitMale)){
+                                    file.copy("plotMale.pdf", file)
+                                }
+                            }
+                        )
                         shinyjs::enable("downloadPlot2")
 
                         cat("\n", "Warnings from Analysis for Males", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -409,6 +675,26 @@ server <- function(input, output, session){
                         file.append("InterVA-warnings.txt", "errorlog.txt")
                         file.remove("warnings.txt"); file.remove("errorlog.txt")
                         file.remove("VA_result.csv")
+
+                        output$downloadCOD2 <- downloadHandler(
+                            filename = "individual-causes-Males.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitMale)){
+                                    write.csv(rv$resultsMale, file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadCOD2")
+
+                        output$downloadData2 <- downloadHandler(
+                            filename = "resultsMales.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitMale)){
+                                    write.csv(print(summary(rv$fitMale, top=20)), file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadData2")
                     }
                     if(is.null(rv$fitMale)) rv$male <- NULL
 
@@ -418,9 +704,17 @@ server <- function(input, output, session){
                         ## rv$female <- TRUE
                         rv$fitFemale     <- InterVA(Input=records[female,], HIV=input$HIV, Malaria=input$Malaria)
                         rv$resultsFemale <- read.csv("VA_result.csv")
-                        shinyjs::enable("downloadData3")
+
                         if(file.exists("plotFemale.pdf")) file.remove("plotFemale.pdf")
-                        pdf("plotFemale.pdf");CSMF(rv$fitFemale, top.plot=20);dev.off()
+                        pdf("plotFemale.pdf");CSMF(rv$fitFemale, top.plot=20, InterVA.rule=TRUE, min.prob=.001);dev.off()
+                        output$downloadPlot3 <- downloadHandler(
+                            filename = "plotFemale.pdf",
+                            content = function(file) {
+                                if(!is.null(rv$fitFemale)){
+                                    file.copy("plotFemale.pdf", file)
+                                }
+                            }
+                        )
                         shinyjs::enable("downloadPlot3")
 
                         cat("\n", "Warnings from Analysis for Females", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -429,6 +723,26 @@ server <- function(input, output, session){
                         file.append("InterVA-warnings.txt", "errorlog.txt")
                         file.remove("warnings.txt"); file.remove("errorlog.txt")
                         file.remove("VA_result.csv")
+
+                        output$downloadCOD3 <- downloadHandler(
+                            filename = "individual-causes-Females.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitFemale)){
+                                    write.csv(rv$resultsFemale, file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadCOD3")
+
+                        output$downloadData3 <- downloadHandler(
+                            filename = "resultsFemales.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitFemale)){
+                                    write.csv(print(summary(rv$fitFemale, top=20)), file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadData3")
                     }
                     if(is.null(rv$fitFemale)) rv$female <- NULL
                 }
@@ -440,9 +754,17 @@ server <- function(input, output, session){
                         ## rv$infant <- TRUE
                         rv$fitInfant     <- InterVA(Input=records[infant,], HIV=input$HIV, Malaria=input$Malaria)
                         rv$resultsInfant <- read.csv("VA_result.csv")
-                        shinyjs::enable("downloadData4")
+
                         if(file.exists("plotInfant.pdf")) file.remove("plotInfant.pdf")
-                        pdf("plotInfant.pdf");CSMF(rv$fitInfant, top.plot=20);dev.off()
+                        pdf("plotInfant.pdf");CSMF(rv$fitInfant, top.plot=20, InterVA.rule=TRUE, min.prob=.001);dev.off()
+                        output$downloadPlot4 <- downloadHandler(
+                            filename = "plotInfant.pdf",
+                            content = function(file) {
+                                if(!is.null(rv$fitInfant)){
+                                    file.copy("plotInfant.pdf", file)
+                                }
+                            }
+                        )
                         shinyjs::enable("downloadPlot4")
 
                         cat("\n", "Warnings from Analysis for Infants", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -451,6 +773,26 @@ server <- function(input, output, session){
                         file.append("InterVA-warnings.txt", "errorlog.txt")
                         file.remove("warnings.txt"); file.remove("errorlog.txt")
                         file.remove("VA_result.csv")
+
+                        output$downloadCOD4 <- downloadHandler(
+                            filename = "individual-causes-Infants.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitInfant)){
+                                    write.csv(rv$resultsInfant, file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadCOD4")
+
+                        output$downloadData4 <- downloadHandler(
+                            filename = "resultsInfants.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitInfant)){
+                                    write.csv(print(summary(rv$fitInfant, top=20)), file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadData4")
                     }
                     if(is.null(rv$fitInfant)) rv$infant <- NULL
 
@@ -460,9 +802,17 @@ server <- function(input, output, session){
                         ## rv$child <- TRUE
                         rv$fitChild     <- InterVA(Input=records[child,], HIV=input$HIV, Malaria=input$Malaria)
                         rv$resultsChild <- read.csv("VA_result.csv")
-                        shinyjs::enable("downloadData5")
+
                         if(file.exists("plotChild.pdf")) file.remove("plotChild.pdf")
-                        pdf("plotChild.pdf");CSMF(rv$fitChild, top.plot=20);dev.off()
+                        pdf("plotChild.pdf");CSMF(rv$fitChild, top.plot=20, InterVA.rule=TRUE, min.prob=.001);dev.off()
+                        output$downloadPlot5 <- downloadHandler(
+                            filename = "plotChild.pdf",
+                            content = function(file) {
+                                if(!is.null(rv$fitChild)){
+                                    file.copy("plotChild.pdf", file)
+                                }
+                            }
+                        )
                         shinyjs::enable("downloadPlot5")
 
                         cat("\n", "Warnings from Analysis for Child", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -471,6 +821,26 @@ server <- function(input, output, session){
                         file.append("InterVA-warnings.txt", "errorlog.txt")
                         file.remove("warnings.txt"); file.remove("errorlog.txt")
                         file.remove("VA_result.csv")
+
+                        output$downloadCOD5 <- downloadHandler(
+                            filename = "individual-causes-Children.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitChild)){
+                                    write.csv(rv$resultsChild, file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadCOD5")
+
+                        output$downloadData5 <- downloadHandler(
+                            filename = "resultsChildren.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitChild)){
+                                    write.csv(print(summary(rv$fitChild, top=20)), file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadData5")
                     }
                     if(is.null(rv$fitChild)) rv$child <- NULL
 
@@ -480,9 +850,17 @@ server <- function(input, output, session){
                         ## rv$adult <- TRUE
                         rv$fitAdult     <- InterVA(Input=records[adult,], HIV=input$HIV, Malaria=input$Malaria)
                         rv$resultsAdult <- read.csv("VA_result.csv")
-                        shinyjs::enable("downloadData6")
+
                         if(file.exists("plotAdult.pdf")) file.remove("plotAdult.pdf")
-                        pdf("plotAdult.pdf");CSMF(rv$fitAdult, top.plot=20);dev.off()
+                        pdf("plotAdult.pdf"); CSMF(rv$fitAdult, top.plot=20, InterVA.rule=TRUE, min.prob=.001); dev.off()
+                        output$downloadPlot6 <- downloadHandler(
+                            filename = "plotAdult.pdf",
+                            content = function(file) {
+                                if(!is.null(rv$fitAdult)){
+                                    file.copy("plotAdult.pdf", file)
+                                }
+                            }
+                        )
                         shinyjs::enable("downloadPlot6")
 
                         cat("\n", "Warnings from Analysis for Adults", date(), "\n", file="InterVA-warnings.txt", append=TRUE)
@@ -491,10 +869,31 @@ server <- function(input, output, session){
                         file.append("InterVA-warnings.txt", "errorlog.txt")
                         file.remove("warnings.txt"); file.remove("errorlog.txt")
                         file.remove("VA_result.csv")
+
+                        output$downloadCOD6 <- downloadHandler(
+                            filename = "individual-causes-Adults.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitAdult)){
+                                    write.csv(rv$resultsAdult, file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadCOD6")
+
+                        output$downloadData6 <- downloadHandler(
+                            filename = "resultsAdults.csv",
+                            content = function(file) {
+                                if(!is.null(rv$fitAdult)){
+                                    write.csv(print(summary(rv$fitAdult, top=20)), file=file, row.names=FALSE)
+                                }
+                            }
+                        )
+                        shinyjs::enable("downloadData6")
                     }
                     if(is.null(rv$fitAdult)) rv$adult <- NULL
                 }
 
+                shinyjs::enable("downloadWarnings")
                 rv$counts <- c(length(male[male]), length(female[female]),
                                length(infant[infant]), length(child[child]),
                                length(adult[adult]),
@@ -505,15 +904,16 @@ server <- function(input, output, session){
             }
         })
         shinyjs::enable("processMe")
+        shinyjs::enable("algorithm")
     })
 
     ## Print warning messages -- HERE
 
     ## Output table with descriptive statistics
     output$titleDescriptiveStats <- renderText({
-        if(!is.null(rv$counts)){
+        ## if(!is.null(rv$counts)){
             "Counts of Deaths by Sex & Age"
-        }
+        ## }
     })
 
     output$descriptiveStats <- renderTable({
@@ -528,6 +928,18 @@ server <- function(input, output, session){
         }
     })
 
+    output$downloadWarnings <- downloadHandler(
+        filename = "warnings-openVA.txt",
+        content = function(file) {
+            if(input$algorithm=="InterVA"){
+                file.copy("InterVA-warnings.txt", file)
+            }
+            if(input$algorithm=="InSilicoVA"){
+                file.copy("InSilico-warnings.txt", file)
+            }
+        }
+    )
+
     ## All
     #### Summarize and print output (all)
     output$titleSummaryAll <- renderText({
@@ -536,9 +948,17 @@ server <- function(input, output, session){
         ## }
     })
     output$summaryAll <- renderPrint({
-        if(!is.null(rv$fitAll)) summary(rv$fitAll)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitAll)){
+            if(algorithm==1 & is.null(rv$fitAll$HIV)){
+                ## printIndiv(rv$fitAll, rv$agg.csmf)
+                print(summary(rv$fitAll, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitAll$HIV)){
+                print(summary(rv$fitAll, top=10))
+            }
+        }
     })
-
     #### Create plot (all)
     output$titlePlotAll <- renderText({
         ## if(!is.null(rv$fitAll)){
@@ -548,14 +968,13 @@ server <- function(input, output, session){
     output$plotAll <- renderPlot({
         if(!is.null(rv$fitAll)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitAll$HIV)){
-                CSMF(rv$fitAll, top.plot=20)
+                CSMF(rv$fitAll, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitAll$HIV)){
                 plot(rv$fitAll, top=20)
             }
         }
     })
-
     ## Male
     #### Summarize and print output (male)
     output$titleSummaryMale <- renderText({
@@ -569,9 +988,17 @@ server <- function(input, output, session){
         }
     })
     output$summaryMale <- renderPrint({
-        if(!is.null(rv$fitMale)) summary(rv$fitMale)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitMale)){
+            if(algorithm==1 & is.null(rv$fitMale$HIV)){
+                ## sumMale <- printIndiv(rv$fitMale, rv$agg.csmfMale)
+                print(summary(rv$fitMale, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitMale$HIV)){
+                print(summary(rv$fitMale, top=10))
+            }
+        }
     })
-
     #### Create plot (male)
     output$titlePlotMale <- renderText({
         ## if(!is.null(rv$fitMale)){
@@ -586,14 +1013,15 @@ server <- function(input, output, session){
     output$plotMale <- renderPlot({
         if(!is.null(rv$fitMale)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitMale$HIV)){
-                CSMF(rv$fitMale, top.plot=20)
+                CSMF(rv$fitMale, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitMale$HIV)){
-                ## plot(rv$fitMale, top=20)
-                indivplot(rv$agg.csmfMale, top = 20, title = "Aggregated COD distribution")
+                ## indivplot(rv$agg.csmfMale, top=20, title="Aggregated COD distribution")
+                plot(rv$fitMale, top=20)
             }
         }
     })
+
     ## Female
     #### Summarize and print output (female)
     output$titleSummaryFemale <- renderText({
@@ -607,9 +1035,17 @@ server <- function(input, output, session){
         }
     })
     output$summaryFemale <- renderPrint({
-        if(!is.null(rv$fitFemale)) summary(rv$fitFemale)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitFemale)){
+            if(algorithm==1 & is.null(rv$fitFemale$HIV)){
+                ## sumFemale <- printIndiv(rv$fitFemale, rv$agg.csmfFemale)
+                print(summary(rv$fitFemale, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitFemale$HIV)){
+                print(summary(rv$fitFemale, top=10))
+            }
+        }
     })
-
     #### Create plot (female)
     output$titlePlotFemale <- renderText({
         ## if(!is.null(rv$fitFemale)){
@@ -624,14 +1060,16 @@ server <- function(input, output, session){
     output$plotFemale <- renderPlot({
         if(!is.null(rv$fitFemale)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitFemale$HIV)){
-                CSMF(rv$fitFemale, top.plot=20)
+                CSMF(rv$fitFemale, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitFemale$HIV)){
-                ## plot(rv$fitFemale, top=20)
-                indivplot(rv$agg.csmfFemale, top = 20, title = "Aggregated COD distribution")
+                ## indivplot(rv$agg.csmfFemale, top=20, title="Aggregated COD distribution")
+                plot(rv$fitFemale, top=20)
+
             }
         }
     })
+
     ## Infant
     #### Summarize and print output
     output$titleSummaryInfant <- renderText({
@@ -645,9 +1083,17 @@ server <- function(input, output, session){
         }
     })
     output$summaryInfant <- renderPrint({
-        if(!is.null(rv$fitInfant)) summary(rv$fitInfant)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitInfant)){
+            if(algorithm==1 & is.null(rv$fitInfant$HIV)){
+                ## sumInfant <- printIndiv(rv$fitInfant, rv$agg.csmfInfant)
+                print(summary(rv$fitInfant, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitInfant$HIV)){
+                print(summary(rv$fitInfant, top=10))
+            }
+        }
     })
-
     #### Create plot (infants)
     output$titlePlotInfant <- renderText({
         ## if(!is.null(rv$fitInfant)){
@@ -662,14 +1108,15 @@ server <- function(input, output, session){
     output$plotInfant <- renderPlot({
         if(!is.null(rv$fitInfant)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitInfant$HIV)){
-                CSMF(rv$fitInfant, top.plot=20)
+                CSMF(rv$fitInfant, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                ## plot(rv$fitInfant, top=20)
-                indivplot(rv$agg.csmfInfant, top = 20, title = "Aggregated COD distribution")
+                ## indivplot(rv$agg.csmfInfant, top=20, title="Aggregated COD distribution")
+                plot(rv$fitInfant, top=20)
             }
         }
     })
+
     ## Child
     #### Summarize and print output
     output$titleSummaryChild <- renderText({
@@ -683,9 +1130,17 @@ server <- function(input, output, session){
         }
     })
     output$summaryChild <- renderPrint({
-        if(!is.null(rv$fitChild)) summary(rv$fitChild)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitChild)){
+            if(algorithm==1 & is.null(rv$fitChild$HIV)){
+                ## sumChild <- printIndiv(rv$fitChild, rv$agg.csmfChild)
+                print(summary(rv$fitChild, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitChild$HIV)){
+                print(summary(rv$fitChild, top=10))
+            }
+        }
     })
-
     #### Create plot (children)
     output$titlePlotChild <- renderText({
         ## if(!is.null(rv$fitChild)){
@@ -700,14 +1155,15 @@ server <- function(input, output, session){
     output$plotChild <- renderPlot({
         if(!is.null(rv$fitChild)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitInfant$HIV)){
-                CSMF(rv$fitChild, top.plot=20)
+                CSMF(rv$fitChild, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitInfant$HIV)){
-                ## plot(rv$fitChild, top=20)
-                indivplot(rv$agg.csmfChild, top = 20, title = "Aggregated COD distribution")
+                ## indivplot(rv$agg.csmfChild, top=20, title="Aggregated COD distribution")
+                plot(rv$fitChild, top=20)
             }
         }
     })
+
     ## Adult
     #### Summarize and print output
     output$titleSummaryAdult <- renderText({
@@ -721,9 +1177,17 @@ server <- function(input, output, session){
         }
     })
     output$summaryAdult <- renderPrint({
-        if(!is.null(rv$fitAdult)) summary(rv$fitAdult)
+        algorithm <- selectedAlgorithm()
+        if(!is.null(rv$fitAdult)){
+            if(algorithm==1 & is.null(rv$fitAdult$HIV)){
+                ## sumAdult <- printIndiv(rv$fitAdult, rv$agg.csmfAdult)
+                print(summary(rv$fitAdult, top=10))
+            }
+            if(algorithm==2 & !is.null(rv$fitAdult$HIV)){
+                print(summary(rv$fitAdult, top=10))
+            }
+        }
     })
-
     #### Create plot
     output$titlePlotAdult <- renderText({
         ## if(!is.null(rv$fitAdult)){
@@ -738,161 +1202,22 @@ server <- function(input, output, session){
     output$plotAdult <- renderPlot({
         if(!is.null(rv$fitAdult)){
             if(input$algorithm=="InterVA" & !is.null(rv$fitAdult$HIV)){
-                CSMF(rv$fitAdult, top.plot=20)
+                CSMF(rv$fitAdult, top.plot=20, InterVA.rule=TRUE, min.prob=.001)
             }
             if(input$algorithm=="InSilicoVA" & is.null(rv$fitAdult$HIV)){
-                ## plot(rv$fitAdult, top=20)
-                indivplot(rv$agg.csmfAdult, top = 20, title = "Aggregated COD distribution")
+                ## indivplot(rv$agg.csmfAdult, top=20, title="Aggregated COD distribution")
+                plot(rv$fitAdult, top=20)
             }
         }
     })
 
-    ## Set up file for downloading
-    output$downloadData1 <- downloadHandler(
-        filename = "resultsAll.csv",
-        content = function(file) {
-            if (!is.null(rv$fitAll)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsAll, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitAll, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot1 <- downloadHandler(
-        filename = "plotAll.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitAll)){
-                file.copy("plotAll.pdf", file)
-            }
-        }
-    )
-    output$downloadData2 <- downloadHandler(
-        filename = "resultsMale.csv",
-        content = function(file) {
-            ## if (!is.null(rv$fitMale)){
-            if (!is.null(rv$male)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsMale, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitMale, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot2 <- downloadHandler(
-        filename = "plotMale.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitMale)){
-                file.copy("plotMale.pdf", file)
-            }
-        }
-    )
-    output$downloadData3 <- downloadHandler(
-        filename = "resultsFemale.csv",
-        content = function(file) {
-            ## if (!is.null(rv$fitFemale)){
-            if (!is.null(rv$female)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsFemale, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitFemale, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot3 <- downloadHandler(
-        filename = "plotFemale.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitFemale)){
-                file.copy("plotFemale.pdf", file)
-            }
-        }
-    )
-    output$downloadData4 <- downloadHandler(
-        filename = "resultsInfant.csv",
-        content = function(file) {
-            ## if (!is.null(rv$fitInfant)){
-            if (!is.null(rv$infant)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsInfant, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitInfant, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot4 <- downloadHandler(
-        filename = "plotInfant.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitInfant)){
-                file.copy("plotInfant.pdf", file)
-            }
-        }
-    )
-    output$downloadData5 <- downloadHandler(
-        filename = "resultsChild.csv",
-        content = function(file) {
-            ## if (!is.null(rv$fitChild)){
-            if (!is.null(rv$child)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsChild, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitChild, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot5 <- downloadHandler(
-        filename = "plotChild.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitChild)){
-                file.copy("plotChild.pdf", file)
-            }
-        }
-    )
-    output$downloadData6 <- downloadHandler(
-        filename = "resultsAdult.csv",
-        content = function(file) {
-            ## if (!is.null(rv$fitAdult)){
-            if (!is.null(rv$adult)){
-                if(input$algorithm=="InterVA"){
-                    write.csv(rv$resultsAdult, file = file)
-                }
-                if(input$algorithm=="InSilicoVA"){
-                    summary(rv$fitAdult, file = file)
-                }
-            }
-        }
-    )
-    output$downloadPlot6 <- downloadHandler(
-        filename = "plotAdult.pdf",
-        content = function(file) {
-            if (!is.null(rv$fitAdult)){
-                file.copy("plotAdult.pdf", file)
-            }
-        }
-    )
-
-    output$downloadWarnings <- downloadHandler(
-        filename = "warnings-openVA.txt",
-        content = function(file) {
-            if(input$algorithm=="InterVA"){
-                file.copy("InterVA-warnings.txt", file)
-            }
-            if(input$algorithm=="InSilicoVA"){
-                file.copy("InSilico-warnings.txt", file)
-            }
-        }
-    )
-
     # disable download button on page load
+    shinyjs::disable("downloadCOD1")
+    shinyjs::disable("downloadCOD2")
+    shinyjs::disable("downloadCOD3")
+    shinyjs::disable("downloadCOD4")
+    shinyjs::disable("downloadCOD5")
+    shinyjs::disable("downloadCOD6")
     shinyjs::disable("downloadData1")
     shinyjs::disable("downloadData2")
     shinyjs::disable("downloadData3")
