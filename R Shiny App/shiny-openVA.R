@@ -202,9 +202,15 @@ server <- function(input, output, session){
     rv$infant <- TRUE
     rv$child  <- TRUE
     rv$adult  <- TRUE
-    rv$mess = ""
 
     observeEvent(input$processMe, {
+
+        rv$fitAll    <- NULL
+        rv$fitMale   <- NULL
+        rv$fitFemale <- NULL
+        rv$fitInfant <- NULL
+        rv$fitChild  <- NULL
+        rv$fitAdult  <- NULL
 
         shinyjs::disable("processMe")
         shinyjs::disable("algorithm")
