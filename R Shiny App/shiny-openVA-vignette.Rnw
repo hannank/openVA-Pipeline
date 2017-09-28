@@ -1,0 +1,173 @@
+\documentclass[letterpaper, 12pt]{article}
+\usepackage{graphics}
+\usepackage{color}
+\usepackage{bm}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{natbib}
+\usepackage{fullpage}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{rotating}
+\usepackage{colortbl}
+\usepackage{url}
+\usepackage{breakurl}
+\usepackage{xcolor}
+\usepackage[colorlinks = true,
+            linkcolor = blue,
+            urlcolor  = red!80!blue,
+            citecolor = blue!80!black,
+            anchorcolor = blue]{hyperref}
+\usepackage{xspace}
+
+
+\newcommand{\pkg}[1]{{\fontseries{b}\selectfont #1}}
+\newcommand{\vapkg}{\pkg{openVA}\xspace}
+\newcommand{\ret}{\hfill \break \noindent}
+\newcommand{\lcent}[1]{{\hspace*{\fill} #1 \hspace*{\fill}}}
+% \newcommand{\R}{$\mathbb{R}\;$}
+\newcommand{\R}{$\textsf{R}\;$}
+\newcommand{\BF}[1]{$\bm{\mathsf{#1}}$}
+
+\begin{document}
+<<setup, echo=FALSE, cache=FALSE>>=
+library(knitr)
+@
+
+\title{\bf Introduction to VA Analysis using the R Shiny App in Windows 10}
+\author{Jason Thomas \& Sam Clark} % Others?
+\maketitle
+
+\section{Introduction}
+
+The aims of this docuement are to 
+
+\begin{itemize}
+\item provide a little backround
+\item installation of \R Shiny App
+\item basic examples of use
+\end{itemize}
+
+% Do we need to say that this work is supported by VS?
+
+\section{Background}
+
+Background on VA.
+
+\par
+
+Background on \R and openVA, CrossVA, and ODK.
+
+\section{Installing and Starting \R Shiny App for Windows 10}
+
+\subsection{Quick Version}
+
+Download the \R Shiny zip file at \newline
+
+\noindent
+\small{\url{https://github.com/jarathomas/openVA-Pipeline/tree/master/R Shiny App/shiny-openVA.zip}} \newline
+
+\noindent
+and unzip it -- the contents should include three files: (1) shiny-openVA.R (\R Shiny script file); (2)
+CrossVA\_0.9.3.zip (an \R package); and (3) va_data_from_odk.csv (an example data file from ODK).
+
+\par
+
+Should we include some non-ODK files as well?
+
+\begin{enumerate}
+\item Install Java (\url{https://java.com/en/download/})
+\item Download the \R executable (with same architecture as Java, e.g., 64-bit) from \ret
+  \url{https://cran.r-project.org/bin/windows/base/} and double-click the file to install \R
+\item Start \R and install the necessary packages by typing the following in the \R Console window at the
+  prompt {\tt \em{>}}
+<<install, eval=FALSE>>=
+install.packages(c("openVA", "shiny", "shinyjs"), dependencies=TRUE)
+@
+  A new window should appear asking the user to select a Secure CRAN mirror, and the installation will begin after clicking the
+  Ok button.
+\item Install the CrossVA package (included in the \R Shiny zip file) by clicking, in the \R menu bar, \BF{
+    Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to
+  navigate to the folder where the \R Shiny zip file was downloaded) and click the open button at the bottom-right of
+  the Select files window.
+\item Open the shiny-openVA.R script (included in the \R Shiny zip file) through the \R menu bar
+  \BF{File\,>\,Open\,Script\ldots} then select the shiny-openVA.R script file and click the open button at the
+  bottom-right of the Open script window.  This step should open a new \R Editor window.
+\item Make sure the focus is on the \R Editor window (by clicking on it) and run the shiny-openVA.R script through
+  the menu bar \BF{Edit\,>\,Run\,all} which will execute the code (in the \R Console) and open your web browser with the
+  \R Shiny app.
+\end{enumerate}
+
+\subsection{More Details}
+
+The \R software is available for download from the Comprehensive R Archive Network (CRAN)
+\url{https://cran.r-project.org/bin/windows/base/}.  Installation instructions are also available from CRAN, but the
+process should be familiar: download the executable file (ending in .exe and double-click the file.  The \R
+Shiny app uses several packages, one of which requires Java (version 6 or above) to be installed on your computer
+(\url{https://java.com/en/download/}).  It is not unusual to experience difficulties while trying to configure \R
+to work with Java.  For more details about the configuration procedure, see the InSilicoVA manual
+(\url{https://github.com/richardli/InSilicoVA/blob/master/Documents/Insilico-manual.pdf}).
+
+\par
+
+After Java and \R have been installed, the next step is to install \R packages that contain the tools needed for the
+Shiny app to run.  Start the \R Gui by double-clicking the icon \includegraphics[width=12pt]{Images/Rlogo.png} and
+install the necessary packages with the command
+
+<<install, eval=FALSE>>=
+@
+
+\noindent which should be typed in the \R Console window at the prompt as follows:
+
+\includegraphics[width=\textwidth]{Images/install-1.png}
+
+\noindent A new window should appear asking the user to select a Secure CRAN mirror (choose a CRAN mirror near your
+location), and the installation will begin after clicking the Ok button. 
+
+\includegraphics[width=\textwidth]{Images/install-2.png}
+
+\noindent You will see A LOT of text scrolling in the \R Console which describes the installation of the numerous
+packages the Shiny app needs.  A modified version of the CrossVA package also needs to be installed with the following
+three steps: (1) select the \R menu bar options \BF{Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} 
+
+\includegraphics[width=\textwidth]{Images/install-3.png}
+
+\noindent (2) select the CrossVA\_0.9.3.zip file (you may need to navigate to the folder where the \R Shiny zip file was
+downloaded); and (3) click the open button at the bottom-right of the Select files window.
+
+\includegraphics[width=\textwidth]{Images/install-4.png}
+
+\noindent Next open the shiny-openVA.R script (included in the \R Shiny zip file) through the \R menu bar
+\BF{File\,>\,Open\,Script\ldots} 
+
+\includegraphics[width=\textwidth]{Images/install-5.png}
+
+\noindent then select the shiny-openVA.R script file and click the open button at the bottom-right of the Open script
+window.  
+
+
+\includegraphics[width=\textwidth]{Images/install-6.png}
+
+\noindent This step should open a new \R Editor window. Make sure the focus is on the \R Editor window (by clicking on
+it) and run the shiny-openVA.R script through the menu bar \BF{Edit\,>\,Run\,all} which will execute the code (in the \R
+Console) and open your web browser with the \R Shiny app.
+
+\includegraphics[width=\textwidth]{Images/install-7.png}
+
+\includegraphics[width=\textwidth]{Images/install-8.png}
+
+Finally, to stop the Shiny app, return to the \R Gui and click on the red stop sign button in the toolbar.
+
+\includegraphics[width=\textwidth]{Images/install-9.png}
+
+\section{Using the R Shiny App}
+
+
+
+\subsection{InSilicoVA}
+
+\subsection{InterVA}
+
+\end{document}
