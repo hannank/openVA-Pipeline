@@ -151,7 +151,7 @@ ui <- fluidPage(
             ## verbatimTextOutput("titleDescriptiveStats"),
             h4(textOutput("titleDescriptiveStats")),
             tableOutput("descriptiveStats"),
-            plotOutput("plotAgeDist"),
+            ## plotOutput("plotAgeDist"),
             h4(textOutput("titleSummaryAll")),
             verbatimTextOutput("summaryAll"),
             h4(textOutput("titlePlotAll")),
@@ -303,11 +303,11 @@ server <- function(input, output, session){
                     }
                 })
 
-                output$plotAgeDist <- renderPlot({
-                    if(!is.null(counts)){
-                        barplot(table(ageGroup), horiz = TRUE, main="Age Distribution", xlab="Counts")
-                    }
-                })
+                ## output$plotAgeDist <- renderPlot({
+                ##     if(!is.null(counts)){
+                ##         barplot(table(ageGroup), horiz = TRUE, main="Age Distribution", xlab="Counts")
+                ##     }
+                ## })
 
                 if(file.exists("plotAgeDist.pdf")) file.remove("plotAgeDist.pdf")
                 pdf("plotAgeDist.pdf")
@@ -659,9 +659,9 @@ server <- function(input, output, session){
                     }
                 })
 
-                output$plotAgeDist <- renderPlot({
-                    barplot(table(ageGroup), horiz = TRUE, main="Age Distribution", xlab="Counts")
-                })
+                ## output$plotAgeDist <- renderPlot({
+                ##     barplot(table(ageGroup), horiz = TRUE, main="Age Distribution", xlab="Counts")
+                ## })
 
                 if(file.exists("plotAgeDist.pdf")) file.remove("plotAgeDist.pdf")
                 pdf("plotAgeDist.pdf")
