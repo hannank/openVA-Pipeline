@@ -74,7 +74,7 @@ Download the \R Shiny zip file at \newline
 
 \noindent
 and unzip it -- the contents should include three files: (1) shiny-openVA.R (\R Shiny script file); (2)
-CrossVA\_0.9.3.zip (an \R package); and (3) va\_data\_from\_odk.csv (an example data file from ODK).
+CrossVA\_0.9.3.zip (an \R package); and (3) who\_va\_output.csv (an example data file from ODK).
 
 % Should we include some non-ODK files as well?
 
@@ -87,13 +87,13 @@ CrossVA\_0.9.3.zip (an \R package); and (3) va\_data\_from\_odk.csv (an example 
 <<install, eval=FALSE>>=
 install.packages(c("openVA", "shinyjs", "lubridate"), dependencies=TRUE)
 @
-A new window should appear asking the user to select a Secure CRAN mirror, and the installation will begin after clicking the Ok button.
+A new window should appear asking the user to select a Secure CRAN mirror, and the installation will begin after clicking the OK button.
 \item Install the CrossVA package (included in the \R Shiny zip file) by clicking, in the \R menu bar, \BF{
     Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to
   navigate to the folder where the \R Shiny zip file was downloaded) and click the open button at the bottom-right of
   the Select files window.
 \item Open the shiny-openVA.R script (included in the \R Shiny zip file) through the \R menu bar
-  \BF{File\,>\,Open\,Script\ldots} then select the shiny-openVA.R script file and click the open button at the
+  \BF{File\,>\,Open\,Script\ldots} then select the shiny-openVA.R script file and click the \underline{O}pen button at the
   bottom-right of the Open script window.  This step should open a new \R Editor window.
 \item Make sure the focus is on the \R Editor window (by clicking on it) and run the shiny-openVA.R script through
   the menu bar \BF{Edit\,>\,Run\,all} which will execute the code (in the \R Console) and open your web browser with the
@@ -132,7 +132,7 @@ InterVA4, nbc4va, Tariff, rJava, and shiny.
 
 After pressing the enter key in the \R console, a new window should appear (as shown in the following figure) asking the
 user to select a Secure CRAN mirror (choose a CRAN mirror near your location), and the installation will begin after
-clicking the Ok button.
+clicking the OK button.
 
 \includegraphics[width=\textwidth]{Images/install-2.png}
 \vspace{12pt}
@@ -149,7 +149,7 @@ menu bar options \newline \BF{Packages\,>\,Install\,package(s)\,from\,local\,fil
 \vspace{12pt}
 
 \noindent (2) select the CrossVA\_0.9.3.zip file (as shown in the following figure; you may need to navigate to the
-folder where the \R Shiny zip file was downloaded); and (3) click the open button at the bottom-right of the Select
+folder where the \R Shiny zip file was downloaded); and (3) click the \underline{O}pen button at the bottom-right of the Select
 files window.
 
 \includegraphics[width=\textwidth]{Images/install-4.png}
@@ -161,7 +161,7 @@ files window.
 \includegraphics[width=\textwidth]{Images/install-5.png}
 \vspace{12pt}
 
-\noindent then select the shiny-openVA.R script file and click the open button at the bottom-right of the Open script
+\noindent then select the shiny-openVA.R script file and click the \underline{O}pen button at the bottom-right of the Open script
 window.
 
 
@@ -191,19 +191,20 @@ and analysis options are entered.
 
 \begin{enumerate}
 \item {\bf Upload your own data here} -- The first input is a data file in Comma Separated Values (CSV) format.  After
-  clicking the Browse button a window will appear allowing you to select your data file.  Once the data have been loaded
-  the app produces the message ``Upload complete''.  There is a sample data file, va\_data\_from\_odk.csv, that is included
+  clicking the Browse\ldots button a window will appear allowing you to select your data file.  Once the data have been loaded
+  the app produces the message ``Upload complete''.  There is a sample data file, who\_va\_output.csv, that is included
   in the \R Shiny zip file and used in the examples below.  Note that once a data file has been uploaded a new button
   will appear {\bf Analyze my data!}.
 \item {\bf Choose your preferences}  -- The data are assumed to be in a particular format with fields identifying the
   age and gender of the deceased.  There are several options for selecting group-specific results.  Note that the time
   it takes to process the data increases with the number of groups selected.
   \begin{enumerate}
-  \item {\bf Include an analysis of all records?} -- This option is selected by default, but it is not necessary.
+  \item {\bf Include an analysis of all records?} -- This option is selected by default, but it is not necessary (e.g., you
+    could solely request sex-specific results).
   \item {\bf Include sex-specific results?} -- Simply click in the empty box to produce separate results for males and females.
   \item {\bf Include age-specific results?} -- Simply click in the empty box to produce separate results for infants
     (less than 1 year old), children (aged 1-4 years old), and adults (ages 5 and above).
-  \item {\bf Number of causes to include in summaries/plots} -- The Shiny app will dislplay the VA results in several
+  \item {\bf Number of causes to include in summaries/plots} -- The Shiny app will display the VA results in several
     tables and plots showing a list of the top (i.e., most prevalent) causes of death.  Slide the bar right (or left) to
     include more (less) causes in the summaries of the results.  The default is to include 10 causes, with a minimum and
     maximum of 5 and 20, respectively -- this was simply a design choice for the app, \vapkg can include any number
@@ -214,36 +215,40 @@ and analysis options are entered.
   \item {\bf InSilico} -- the number of iterations in the simulations can also be specified; the default is 5,000, but
     if you are simply exploring/testing out the app you may want to choose the lower end (and reduce the processing
     time); the part of the InSilico algorithm is implemented in Java and thus a separate windows will appear with
-    a Java Progress Bar indicating the percentage of iterations that have been completed.  (Technical note: if the
-    algorithm does not converge in the specified number of iterations, it will automatically add additional iterations
-    to the simulation.)
+    a Java Progress Bar indicating the percentage of iterations that have been completed.  
+    \begin{center}
+    \includegraphics[width=2in]{Images/java.png}
+    \end{center}
+    (Technical note: if the algorithm does not converge in the specified number of iterations, it will automatically add
+    additional iterations to the simulation.)
   \item {\bf InterVA4} -- specify the level of HIV and malaria prevalence; which are the same parameters required by the
     InterVA-4 software developed by by Peter Byass (\url{http://www.interva.net/}).  Here is the description
     from the InterVA-4 User Guide (version 4.04, 2017-06-06): ``These settings do not directly determine the cause of
     death, but conceptually they are similar to a physician knowing that (s)he is working in a high or low malaria or
     HIV population, irrespective of the details of a specific case currently under consideration.'' (p.6)
-  \item \vapkg includes addtional algorithms, namely Tariff (\url{https://cran.r-project.org/package=Tariff}) and the
+  \item \vapkg includes additional algorithms, namely Tariff (\url{https://cran.r-project.org/package=Tariff}) and the
    Bayes Classifier for Verbal Autopsy Data (\url{https://cran.r-project.org/package=nbc4va}), but these options require
-   several additional steps to work with ODK exports of the WHO VA instruments and thus are not included in the app.
+   several additional steps to work with ODK data exports of the WHO VA instruments and thus are not included in the app.
   \end{enumerate}
-\item {\bf Data Checks}  -- Are the data from an  ODKBriefcase export?; this option is checked by  default and refers to
-  the CSV file generated  by the ODKBriefcase command line interface with arguments  to the options ``--export\_filename''
-  and ``--export\_directory'' (for more details, see \url{https://opendatakit.org/use/briefcase/}); for data from a
-  different source, see the InSilicoVA documentation for the required data format (\url{https://cran.r-project.org/package=InSilicoVA})
+\item {\bf Data Checks}: {\em Are the data from an ODKBriefcase export?} -- This option is checked by default and refers
+  to the CSV file generated by the ODKBriefcase command line interface with arguments to the options
+  ``--export\_filename'' and ``--export\_directory'' (for more details, see
+  \url{https://opendatakit.org/use/briefcase/}).  To analyze data from a different source, see the InSilicoVA
+  documentation for the required data format (\url{https://cran.r-project.org/package=InSilicoVA})
 \item {\bf Analyze my data!} -- Processing the data can take a while with a large amount of data.  With 500 cases it
     may take anywhere from 5 to 30 minutes depending on the algorithm (InSilico typically takes longer, and the waiting
     time will obviously increase with the number of iterations for the simulation).  Once pressed, a progress bar will
-    appear.
+    appear.  Again, with InSilico a separate Java ProgressBar window may appear (see above). 
 \end{enumerate}
 
-This side  panel also includes  several additional buttons  that are  inactive when no  data have been  analyzed.  These
-buttons allow you  to download results in the  form of CSV files and PDF  files (for plots), as well  as additional text
-files that document error and warning messages.  After providing the  necessary data and pressing the {\bf Analyze my data!} the
-data will be processed and these buttons will become active (i.e., you may click on them) as the results are obtained.
+This side panel also includes several additional buttons that are inactive when no data have been analyzed.  These
+buttons allow you to download results in the form of CSV and PDF files, as well as additional text files that document
+error and warning messages.  After providing the necessary data and pressing the {\bf Analyze my data!} the data will be
+processed and these buttons will become active (i.e., you may click on them) as the results are obtained.
 
 \subsection{InSilicoVA Example}
 
-In our first example, we analyze the sample data set va\_data\_from\_odk.csv (15 records/deaths) generated from an
+In our first example, we analyze the sample data set who\_va\_output.csv (15 records/deaths) generated from an
 ODKBriefcase export and included in the \R Shiny zip file (the corresponding input option is selected by default).
 Results are requested for all records, as well as separately by gender and age groups. The top 8 causes will be included
 in the summaries of the results (as chosen with the slider input).  InSilico is the algorithm being used with the number
@@ -252,12 +257,9 @@ of iterations set to 600. This took about one minute on a laptop with a 2.7GHz I
 \includegraphics[width=\textwidth]{Images/insilico-1.png}
 \vspace{12pt}
 
-\includegraphics[width=2in]{Images/java.png}
-\vspace{12pt}
-
 The results are displayed on the right side of the web browser and begin with a table that lists the number of deaths by
 age and sex  that are included in the  data.  Summaries for the top 8  causes of death and plots  of the cause-specific
-mortality fraction  for the top  8 causes are  also included for each  group selected --  results are presented  in the
+mortality fraction (CSMF) for the top  8 causes are  also included for each  group selected --  results are presented  in the
 following order: total population, males, females, infants, children  (results are empty since there are no child deaths
 in the data), and adults.
 
@@ -269,20 +271,26 @@ panel on the left side of the browser, with the options described in the followi
 
 \begin{itemize}
 \item {\bf Download Plot of Age Distribution as .pdf} -- This file contains a histogram of the number of deaths in the three
-  age groups (infants, children, and adults).
+  age groups (infants, children, and adults).  The corresponding counts are displayed in the table (appearing in the
+  right side of the browser) entitled ``Counts of Deaths by Sex \& Age''.
 \item {\bf Download Causes for All Records as .csv} -- This file includes the record ID (which is simply the row number
   in the original data file) and the three most likely causes of death and the associated probabilities; note that some
   records (5, 9, and 15) are excluded due to data errors (i.e., missing necessary data/indicators; or inconsistencies
   among indicators that cannot be reconciled).
 \item {\bf Download Summary for All Records as .csv} -- This file contains the information appearing in the web browser
   under the title ``Summary of Results using All Records''.
-\item {\bf Download Plot for All Records as .pdf} -- This file contains the CSMF displayed on the right side of the web browser
-\begin{center}
-\includegraphics[width=4in]{Images/insilico-plotAll.pdf}
-\end{center}
+\item {\bf Download Plot for All Records as .pdf} -- This file contains the CSMF displayed on the right side of the web
+  browser under the title ``CSMF Plot for Total Population'' and is reproduced here:
+  \begin{center}
+    \includegraphics[width=4in]{Images/insilico-plotAll.pdf}
+  \end{center}
+  InSilicoVA uses a Bayesian approach which yields results in the form of probability distributions for the parameters of
+  interest.  The above figure summarizes these distributions of the CSMF for the top causes with small, solid rectangles --
+  indicating the medians of the probability distributions -- and black lines stretching from the 2.5 percentile to the
+  97.5 percentile (similar to a 95\% confidence interval).
 \item The three options listed above are available for each group included in the analysis.
-\item {\bf Download warnings as .txt} -- This option is located at the very bottom of the panel on the left side of the web browser,
-  and the associated text file includes the warning and error messages generated by InSilico and the issues encountered and, in some
+\item {\bf Download warnings as .txt} -- This option is located at the very bottom of the panel on the left side of the web browser.
+  The associated text file includes the warning and error messages generated by InSilico and the issues encountered and, in some
   cases, the steps taken to reconcile the inconsistencies in the data.
 \end{itemize}
 
@@ -296,8 +304,8 @@ For our second example, we analyze the same data but use the InterVA4 algorithm 
 
 The results are slightly different because InSilico includes uncertainty (similar to confidence intervals) around the
 point estimates, whereas InterVA4 does not.  However, the number of deaths tabulated by age and sex as well as the top
-causes of death (top 10 for the summary and top 20 in the CSMF plot) are still included.  The corresponding results are
-also available for download by clicking on the buttons in the panel on the left side of the browser.
+causes of death are still included.  The corresponding results are also available for download by clicking on the
+buttons in the panel on the left side of the browser.  An example of the CSMF for all records is included below.
 
 \begin{center}
 \includegraphics[width=4in]{Images/interva-plotAll.pdf}
