@@ -67,10 +67,11 @@ necessary steps for an introduction to \vapkg, but more information on the softw
 
 \subsection{Quick Version}
 
-Download the \R Shiny zip file at \newline
+Download the \R Shiny zip file, shiny-openVA.zip, at \newline
 
 \noindent
-\small{\url{https://github.com/jarathomas/openVA-Pipeline/tree/master/R Shiny App/shiny-openVA.zip}} \newline
+\url{https://github.com/jarathomas/openVA-Pipeline/blob/master/ShinyDownload/} \newline
+
 
 \noindent
 and unzip it -- the contents should include three files: (1) shiny-openVA.R (\R Shiny script file); (2)
