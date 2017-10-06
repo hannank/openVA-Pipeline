@@ -32,12 +32,13 @@
 \newcommand{\BF}[1]{$\bm{\mathsf{#1}}$}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 <<setup, echo=FALSE, cache=FALSE>>=
 library(knitr)
 @
 
-\title{\bf Introduction to VA Analysis using \vapkg the R Shiny App in Windows 10}
-\author{Jason Thomas \& Sam Clark} % Others?
+\title{\bf Introduction to VA Analysis using the \vapkg R Shiny App in Windows 10}
+\author{Jason Thomas \& Sam Clark} % Others? suggest: "in collaboartion with the Bloomberg Data for Health Inittaive". the names you have listed dont match the names listed in the Shiny app browesr window (alos have Richard and Tyler)
 \maketitle
 
 \section{Introduction}
@@ -50,12 +51,12 @@ There are several methods for analyzing verbal autopsy (VA) data with the goal o
 \R free software environment consolidates many of these tools into a single package.  This document serves to introduce
 the \vapkg package through the installation and use of a user-friendly \R Shiny app.  After an initial setup, the user
 can analyze VA data with different algorithms and access results without having to learn the \R programming language.
-Part of the focus in the following sections relates to data collected and managed using the Open Data Kit, which is
+Part of the focus in the following sections relates to data collected and managed using the Open Data Kit (ODK). Data collected using ODK is
 prepared for analysis using another \R package, namely, CrossVA.  The information presented here provides all the
-necessary steps for an introduction to \vapkg, but more information on the software can be found at the following sites:
+necessary steps for an introduction to \vapkg, but more information can be found at the following sites:
 
 \begin{itemize}
-\item \R software environment -- \url{https://cran.r-project.org/}
+\item \R software environment -- \url{https://cran.r-project.org/} %dash dont show
 \item \vapkg -- \url{https://cran.r-project.org/package=openVA}
 % \item CrossVA -- \url{https://CRAN.R-project.org/package=CrossVA}; although a different CrossVA package is used for
 % the app
@@ -65,7 +66,7 @@ necessary steps for an introduction to \vapkg, but more information on the softw
 
 \section{Installing and Starting \R Shiny App for Windows 10}
 
-\subsection{Quick Version}
+\subsection{Quick Start-up Guide (for a more detailed description see below)}
 
 Download the \R Shiny zip file, shiny-openVA.zip, at \newline
 
@@ -88,9 +89,9 @@ CrossVA\_0.9.3.zip (an \R package); and (3) who\_va\_output.csv (an example data
 <<install, eval=FALSE>>=
 install.packages(c("openVA", "shinyjs", "lubridate"), dependencies=TRUE)
 @
-A new window should appear asking the user to select a Secure CRAN mirror, and the installation will begin after clicking the OK button.
+A new window should appear asking the user to select a Secure CRAN mirror (select the mirror geographically closets to you), and the installation will begin after clicking the OK button.
 \item Install the CrossVA package (included in the \R Shiny zip file) by clicking, in the \R menu bar, \BF{
-    Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to
+    Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to %is there no need to unzip?
   navigate to the folder where the \R Shiny zip file was downloaded) and click the open button at the bottom-right of
   the Select files window.
 \item Open the shiny-openVA.R script (included in the \R Shiny zip file) through the \R menu bar
@@ -101,26 +102,27 @@ A new window should appear asking the user to select a Secure CRAN mirror, and t
   \R Shiny app.
 \end{enumerate}
 
-\subsection{More Details}
+\subsection{More Details on Installation}
 
 The \R software is available for download from the Comprehensive R Archive Network (CRAN)
 \url{https://cran.r-project.org/bin/windows/base/}.  Installation instructions are also available from CRAN, but the
-process should be familiar: download the executable file (ending in .exe and double-click the file.  The \R Shiny app
+process should be familiar: download the executable file (ending in .exe and double-click the file).  The \R Shiny app
 uses several packages, one of which requires Java (version 6 or above) to be installed on your computer
 (\url{https://java.com/en/download/}).  It is not unusual to experience difficulties while trying to configure \R to
 work with Java.  For more details about the configuration procedure, see the InSilicoVA manual
-(\url{https://github.com/richardli/InSilicoVA/blob/master/Documents/Insilico-manual.pdf}).
+(\url{https://github.com/richardli/InSilicoVA/blob/master/Documents/Insilico-manual.pdf}). As a common work-around to problems, ensure to install both the
+64 and 32 bit version of java. % assuming that is correct?
 
 \par
 
 After Java and \R have been installed, the next step is to install \R packages that contain the tools needed for the
 Shiny app to run.  Start the \R Gui by double-clicking the icon \includegraphics[width=12pt]{Images/Rlogo.png} and
-install the necessary packages with the command
+install the necessary packages with the command:
 
 <<install, eval=FALSE>>=
 @
 
-\noindent which should be typed in the \R Console window at the prompt as follows:
+\noindent which should be typed (or copy and pasted) in the \R Console window at the prompt as follows:
 
 \includegraphics[width=\textwidth]{Images/install-1.png}
 \vspace{12pt}
@@ -143,7 +145,7 @@ packages the Shiny app needs.
 
 \par
 
-A modified version of the CrossVA package also needs to be installed with the following three steps: (1) select the \R
+A modified \iffalse above this is just called the CrossVA package so the "modified" may be confusing here \fi version of the CrossVA package also needs to be installed with the following three steps: (1) select the \R
 menu bar options \newline \BF{Packages\,>\,Install\,package(s)\,from\,local\,files\ldots}
 
 \includegraphics[width=\textwidth]{Images/install-3.png}
@@ -191,7 +193,7 @@ Once the \R Shiny app is running in a web browser there are is a panel on the le
 and analysis options are entered.
 
 \begin{enumerate}
-\item {\bf Upload your own data here} -- The first input is a data file in Comma Separated Values (CSV) format.  After
+\item {\bf Upload your own data here} -- The first input is a data file in Comma Separated Values (CSV) format (the file should originate from an ODK Briefcase export).  After
   clicking the Browse\ldots button a window will appear allowing you to select your data file.  Once the data have been loaded
   the app produces the message ``Upload complete''.  There is a sample data file, who\_va\_output.csv, that is included
   in the \R Shiny zip file and used in the examples below.  Note that once a data file has been uploaded a new button
@@ -213,7 +215,9 @@ and analysis options are entered.
   \end{enumerate}
 \item {\bf Select Algorithm}
   \begin{enumerate}
-  \item {\bf InSilico} -- the number of iterations in the simulations can also be specified; the default is 5,000, but
+  \item {\bf InSilico} -- this algorithm computes COD by carrieing out a specific number of iterration %improve language here; include link as for InterVA
+  the more iterrations the longer the time for the computation of the COD and the more precise the computation. %correct?
+  The number of iterations in the simulations can be specified in the Shiny app; the default is 5,000, but
     if you are simply exploring/testing out the app you may want to choose the lower end (and reduce the processing
     time); the part of the InSilico algorithm is implemented in Java and thus a separate windows will appear with
     a Java Progress Bar indicating the percentage of iterations that have been completed.  
@@ -229,7 +233,7 @@ and analysis options are entered.
     HIV population, irrespective of the details of a specific case currently under consideration.'' (p.6)
   \item \vapkg includes additional algorithms, namely Tariff (\url{https://cran.r-project.org/package=Tariff}) and the
    Bayes Classifier for Verbal Autopsy Data (\url{https://cran.r-project.org/package=nbc4va}), but these options require
-   several additional steps to work with ODK data exports of the WHO VA instruments and thus are not included in the app.
+   several additional steps to work with ODK data exports of the WHO VA instruments and thus are not included in the app.% i am not sure if this shoudl be part of the list (i.e. (C)) i think it should be more of a Technical note:)
   \end{enumerate}
 \item {\bf Data Checks}: {\em Are the data from an ODKBriefcase export?} -- This option is checked by default and refers
   to the CSV file generated by the ODKBriefcase command line interface with arguments to the options
@@ -250,7 +254,7 @@ processed and these buttons will become active (i.e., you may click on them) as 
 \subsection{InSilicoVA Example}
 
 In our first example, we analyze the sample data set who\_va\_output.csv (15 records/deaths) generated from an
-ODKBriefcase export and included in the \R Shiny zip file (the corresponding input option is selected by default).
+ODKBriefcase export and included in the \R Shiny zip file (the corresponding input option is selected by default). %The () is confusing and I woudl remove.
 Results are requested for all records, as well as separately by gender and age groups. The top 8 causes will be included
 in the summaries of the results (as chosen with the slider input).  InSilico is the algorithm being used with the number
 of iterations set to 600. This took about one minute on a laptop with a 2.7GHz Intel Core i-7 processor.
@@ -262,7 +266,7 @@ The results are displayed on the right side of the web browser and begin with a 
 age and sex  that are included in the  data.  Summaries for the top 8  causes of death and plots  of the cause-specific
 mortality fraction (CSMF) for the top  8 causes are  also included for each  group selected --  results are presented  in the
 following order: total population, males, females, infants, children  (results are empty since there are no child deaths
-in the data), and adults.
+in this data set), and adults.
 
 \includegraphics[width=\textwidth]{Images/insilico-2.png}
 \vspace{12pt}
@@ -274,10 +278,10 @@ panel on the left side of the browser, with the options described in the followi
 \item {\bf Download Plot of Age Distribution as .pdf} -- This file contains a histogram of the number of deaths in the three
   age groups (infants, children, and adults).  The corresponding counts are displayed in the table (appearing in the
   right side of the browser) entitled ``Counts of Deaths by Sex \& Age''.
-\item {\bf Download Causes for All Records as .csv} -- This file includes the record ID (which is simply the row number
+\item {\bf Download Causes for All Records as .csv} -- This file includes the record ID (which is simply the row number %this row number is an isuse and in the long run, i think we should allow for the following: after the user selects the data set, they should be given a drop down menue with the headres of all columns and they should be asked to identify the colomun which is the unique ID for each of the VAs, i.e. the linking identifier (i am not sure how easy that is to implement but it would make the individula level output much more useful)
   in the original data file) and the three most likely causes of death and the associated probabilities; note that some
   records (5, 9, and 15) are excluded due to data errors (i.e., missing necessary data/indicators; or inconsistencies
-  among indicators that cannot be reconciled).
+  among indicators that cannot be reconciled). %the "cannot be reconciled" may be confusing. should these not come out as undetermined
 \item {\bf Download Summary for All Records as .csv} -- This file contains the information appearing in the web browser
   under the title ``Summary of Results using All Records''.
 \item {\bf Download Plot for All Records as .pdf} -- This file contains the CSMF displayed on the right side of the web
@@ -289,7 +293,7 @@ panel on the left side of the browser, with the options described in the followi
   interest.  The above figure summarizes these distributions of the CSMF for the top causes with small, solid rectangles --
   indicating the medians of the probability distributions -- and black lines stretching from the 2.5 percentile to the
   97.5 percentile (similar to a 95\% confidence interval).
-\item The three options listed above are available for each group included in the analysis.
+\item The three options listed above are available for each group included in the analysis. % it is not clear to me what this is referring to
 \item {\bf Download warnings as .txt} -- This option is located at the very bottom of the panel on the left side of the web browser.
   The associated text file includes the warning and error messages generated by InSilico and the issues encountered and, in some
   cases, the steps taken to reconcile the inconsistencies in the data.
