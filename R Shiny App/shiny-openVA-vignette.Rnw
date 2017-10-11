@@ -32,20 +32,16 @@
 \newcommand{\BF}[1]{$\bm{\mathsf{#1}}$}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+% \SweaveOpts{concordance=TRUE}
 <<setup, echo=FALSE, cache=FALSE>>=
 library(knitr)
 @
 
 \title{\bf Introduction to VA Analysis using the \vapkg R Shiny App in Windows 10}
-\author{Jason Thomas \& Sam Clark} % Others? suggest: "in collaboartion with the Bloomberg Data for Health Inittaive". the names you have listed dont match the names listed in the Shiny app browesr window (alos have Richard and Tyler)
+\author{Jason Thomas, Sam Clark, Richard Li, \& Tyler McCormick \\ in collaboration with the Bloomberg Data for Health Initiative}
 \maketitle
 
 \section{Introduction}
-
-% Do we need to say that this work is supported by VS?
-% Should we change the Title in the app since it now implements InterVA
-% should we use any other convetions, e.g. file names in \tt?
 
 There are several methods for analyzing verbal autopsy (VA) data with the goal of assigning a cause of death.  \vapkg for the
 \R free software environment consolidates many of these tools into a single package.  This document serves to introduce
@@ -56,12 +52,10 @@ prepared for analysis using another \R package, namely, CrossVA.  The informatio
 necessary steps for an introduction to \vapkg, but more information can be found at the following sites:
 
 \begin{itemize}
-\item \R software environment -- \url{https://cran.r-project.org/} %dash dont show
-\item \vapkg -- \url{https://cran.r-project.org/package=openVA}
-% \item CrossVA -- \url{https://CRAN.R-project.org/package=CrossVA}; although a different CrossVA package is used for
-% the app
-\item \R Shiny -- \url{https://shiny.rstudio.com/}
-\item Open Data Kit (ODK) -- \url{https://opendatakit.org/}
+\item \R software environment \url{https://cran.r-project.org/}
+\item \vapkg \url{https://cran.r-project.org/package=openVA}
+\item \R Shiny \url{https://shiny.rstudio.com/}
+\item Open Data Kit (ODK) \url{https://opendatakit.org/}
 \end{itemize}
 
 \section{Installing and Starting \R Shiny App for Windows 10}
@@ -78,10 +72,8 @@ Download the \R Shiny zip file, shiny-openVA.zip, at \newline
 and unzip it -- the contents should include three files: (1) shiny-openVA.R (\R Shiny script file); (2)
 CrossVA\_0.9.3.zip (an \R package); and (3) who\_va\_output.csv (an example data file from ODK).
 
-% Should we include some non-ODK files as well?
-
 \begin{enumerate}
-\item Install Java (\url{https://java.com/en/download/})
+\item Install the Java SE 7 (or higher) development kit (JDK) (\url{http://www.oracle.com/technetwork/java/javase/downloads/index.html})
 \item Download the \R executable (with same architecture as Java, e.g., 64-bit) from \ret
   \url{https://cran.r-project.org/bin/windows/base/} and double-click the file to install \R
 \item Start \R and install the necessary packages by typing the following in the \R Console window at the
@@ -91,7 +83,7 @@ install.packages(c("openVA", "shinyjs", "lubridate"), dependencies=TRUE)
 @
 A new window should appear asking the user to select a Secure CRAN mirror (select the mirror geographically closets to you), and the installation will begin after clicking the OK button.
 \item Install the CrossVA package (included in the \R Shiny zip file) by clicking, in the \R menu bar, \BF{
-    Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to %is there no need to unzip?
+    Packages\,>\,Install\,package(s)\,from\,local\,files\ldots} then select the CrossVA\_0.9.3.zip file (you may need to
   navigate to the folder where the \R Shiny zip file was downloaded) and click the open button at the bottom-right of
   the Select files window.
 \item Open the shiny-openVA.R script (included in the \R Shiny zip file) through the \R menu bar
@@ -107,11 +99,11 @@ A new window should appear asking the user to select a Secure CRAN mirror (selec
 The \R software is available for download from the Comprehensive R Archive Network (CRAN)
 \url{https://cran.r-project.org/bin/windows/base/}.  Installation instructions are also available from CRAN, but the
 process should be familiar: download the executable file (ending in .exe and double-click the file).  The \R Shiny app
-uses several packages, one of which requires Java (version 6 or above) to be installed on your computer
-(\url{https://java.com/en/download/}).  It is not unusual to experience difficulties while trying to configure \R to
-work with Java.  For more details about the configuration procedure, see the InSilicoVA manual
-(\url{https://github.com/richardli/InSilicoVA/blob/master/Documents/Insilico-manual.pdf}). As a common work-around to problems, ensure to install both the
-64 and 32 bit version of java. % assuming that is correct?
+uses several packages, one of which requires the Java SE 7 (or higher) development kit (JDK)
+(\url{http://www.oracle.com/technetwork/java/javase/downloads/index.html}).  Be sure to install the same architecture
+versions (i.e., 32-bit or 64-bit) of \R and the Java Platform.  It is not unusual to experience difficulties while
+trying to configure \R to work with Java.  For more details about the configuration procedure, see the InSilicoVA manual
+(\url{https://github.com/richardli/InSilicoVA/blob/master/Documents/Insilico-manual.pdf}).
 
 \par
 
@@ -129,7 +121,7 @@ install the necessary packages with the command:
 
 \noindent The {\tt dependencies=TRUE} option will tell \R to install many more packages than just the three packages
 included in the command.  For example, the following packages (along with many more) will also be installed: InSilicoVA,
-InterVA4, nbc4va, Tariff, rJava, and shiny.  
+InterVA4, nbc4va, Tariff, rJava, and shiny.
 
 \par
 
@@ -141,7 +133,7 @@ clicking the OK button.
 \vspace{12pt}
 
 \noindent You will see A LOT of text scrolling in the \R Console which describes the installation of the numerous
-packages the Shiny app needs.  
+packages the Shiny app needs.
 
 \par
 
@@ -213,27 +205,31 @@ and analysis options are entered.
     maximum of 5 and 20, respectively -- this was simply a design choice for the app, \vapkg can include any number
     of causes the user wants.
   \end{enumerate}
-\item {\bf Select Algorithm}
+\item  {\bf   Select  Algorithm}\footnote{Technical   Note:  \vapkg  includes   additional  algorithms,   namely  Tariff
+    (\url{https://cran.r-project.org/package=Tariff})   and    the   Bayes   Classifier   for    Verbal   Autopsy   Data
+    (\url{https://cran.r-project.org/package=nbc4va}), but these  options require several additional steps  to work with
+    ODK data exports of the WHO VA instruments and thus are not included in the app.}
   \begin{enumerate}
-  \item {\bf InSilico} -- this algorithm computes COD by carrieing out a specific number of iterration %improve language here; include link as for InterVA
-  the more iterrations the longer the time for the computation of the COD and the more precise the computation. %correct?
-  The number of iterations in the simulations can be specified in the Shiny app; the default is 5,000, but
-    if you are simply exploring/testing out the app you may want to choose the lower end (and reduce the processing
-    time); the part of the InSilico algorithm is implemented in Java and thus a separate windows will appear with
-    a Java Progress Bar indicating the percentage of iterations that have been completed.  
+  \item {\bf InSilico} -- The algorithm computes the causes of death (COD) by performing a specific number of
+    iterations, which can be chosen with the slider input (the default is 5,000).  Choosing a larger number of
+    iterations will result in a longer waiting time for the algorithm to finish, but will also help improve the
+    approximate results. If you are simply exploring/testing out the app, you may want to choose a small number of
+    iterations (and thus reduce the processing time).  Part of the InSilico algorithm is implemented in Java and thus a
+    separate windows will appear with a Java Progress Bar indicating the percentage of iterations that have been
+    completed.
     \begin{center}
     \includegraphics[width=2in]{Images/java.png}
     \end{center}
-    (Technical note: if the algorithm does not converge in the specified number of iterations, it will automatically add
-    additional iterations to the simulation.)
-  \item {\bf InterVA4} -- specify the level of HIV and malaria prevalence; which are the same parameters required by the
-    InterVA-4 software developed by by Peter Byass (\url{http://www.interva.net/}).  Here is the description
-    from the InterVA-4 User Guide (version 4.04, 2017-06-06): ``These settings do not directly determine the cause of
-    death, but conceptually they are similar to a physician knowing that (s)he is working in a high or low malaria or
-    HIV population, irrespective of the details of a specific case currently under consideration.'' (p.6)
-  \item \vapkg includes additional algorithms, namely Tariff (\url{https://cran.r-project.org/package=Tariff}) and the
-   Bayes Classifier for Verbal Autopsy Data (\url{https://cran.r-project.org/package=nbc4va}), but these options require
-   several additional steps to work with ODK data exports of the WHO VA instruments and thus are not included in the app.% i am not sure if this shoudl be part of the list (i.e. (C)) i think it should be more of a Technical note:)
+    Technical note: if the algorithm does not converge in the specified number of iterations, it will automatically add
+    additional iterations to the simulation.  For more details, see \url{https://cran.r-project.org/package=InSilicoVA}.
+  \item {\bf InterVA4} -- The user can specify the level of HIV and malaria prevalence; which are the same parameters
+    required by the InterVA-4 software developed by by Peter Byass (\url{http://www.interva.net/}).  Here is the
+    description from the InterVA-4 User Guide (version 4.04, 2017-06-06): ``These settings do not directly determine the
+    cause of death, but conceptually they are similar to a physician knowing that (s)he is working in a high or low
+    malaria or HIV population, irrespective of the details of a specific case currently under consideration.'' (p.6)
+  % \item \vapkg includes additional algorithms, namely Tariff (\url{https://cran.r-project.org/package=Tariff}) and the
+  %  Bayes Classifier for Verbal Autopsy Data (\url{https://cran.r-project.org/package=nbc4va}), but these options require
+  %  several additional steps to work with ODK data exports of the WHO VA instruments and thus are not included in the app.
   \end{enumerate}
 \item {\bf Data Checks}: {\em Are the data from an ODKBriefcase export?} -- This option is checked by default and refers
   to the CSV file generated by the ODKBriefcase command line interface with arguments to the options
@@ -243,7 +239,7 @@ and analysis options are entered.
 \item {\bf Analyze my data!} -- Processing the data can take a while with a large amount of data.  With 500 cases it
     may take anywhere from 5 to 30 minutes depending on the algorithm (InSilico typically takes longer, and the waiting
     time will obviously increase with the number of iterations for the simulation).  Once pressed, a progress bar will
-    appear.  Again, with InSilico a separate Java ProgressBar window may appear (see above). 
+    appear.  Again, with InSilico a separate Java ProgressBar window may appear (see above).
 \end{enumerate}
 
 This side panel also includes several additional buttons that are inactive when no data have been analyzed.  These
@@ -254,10 +250,10 @@ processed and these buttons will become active (i.e., you may click on them) as 
 \subsection{InSilicoVA Example}
 
 In our first example, we analyze the sample data set who\_va\_output.csv (15 records/deaths) generated from an
-ODKBriefcase export and included in the \R Shiny zip file (the corresponding input option is selected by default). %The () is confusing and I woudl remove.
-Results are requested for all records, as well as separately by gender and age groups. The top 8 causes will be included
-in the summaries of the results (as chosen with the slider input).  InSilico is the algorithm being used with the number
-of iterations set to 600. This took about one minute on a laptop with a 2.7GHz Intel Core i-7 processor.
+ODKBriefcase export and included in the \R Shiny zip file.  Results are requested for all records, as well as separately
+by gender and age groups. The top 8 causes will be included in the summaries of the results (as chosen with the slider
+input).  InSilico is the algorithm being used with the number of iterations set to 600. This took about one minute on a
+laptop with a 2.7GHz Intel Core i-7 processor.
 
 \includegraphics[width=\textwidth]{Images/insilico-1.png}
 \vspace{12pt}
@@ -278,10 +274,14 @@ panel on the left side of the browser, with the options described in the followi
 \item {\bf Download Plot of Age Distribution as .pdf} -- This file contains a histogram of the number of deaths in the three
   age groups (infants, children, and adults).  The corresponding counts are displayed in the table (appearing in the
   right side of the browser) entitled ``Counts of Deaths by Sex \& Age''.
-\item {\bf Download Causes for All Records as .csv} -- This file includes the record ID (which is simply the row number %this row number is an isuse and in the long run, i think we should allow for the following: after the user selects the data set, they should be given a drop down menue with the headres of all columns and they should be asked to identify the colomun which is the unique ID for each of the VAs, i.e. the linking identifier (i am not sure how easy that is to implement but it would make the individula level output much more useful)
+\item {\bf Download Causes for All Records as .csv} -- This file includes the record ID (which is simply the row number
   in the original data file) and the three most likely causes of death and the associated probabilities; note that some
-  records (5, 9, and 15) are excluded due to data errors (i.e., missing necessary data/indicators; or inconsistencies
-  among indicators that cannot be reconciled). %the "cannot be reconciled" may be confusing. should these not come out as undetermined
+  records (5, 9, and 15) are excluded due to data errors (i.e., missing necessary data/indicators).
+  % Martin's comment:
+  % this row number is an isuse and in the long run, i think we should allow for the following: after the user selects
+  % the data set, they should be given a drop down menu with the headers of all columns and they should be asked to
+  % identify the column which is the unique ID for each of the VAs, i.e. the linking identifier (i am not sure how easy
+  % that is to implement but it would make the individul level output much more useful)
 \item {\bf Download Summary for All Records as .csv} -- This file contains the information appearing in the web browser
   under the title ``Summary of Results using All Records''.
 \item {\bf Download Plot for All Records as .pdf} -- This file contains the CSMF displayed on the right side of the web
@@ -293,7 +293,9 @@ panel on the left side of the browser, with the options described in the followi
   interest.  The above figure summarizes these distributions of the CSMF for the top causes with small, solid rectangles --
   indicating the medians of the probability distributions -- and black lines stretching from the 2.5 percentile to the
   97.5 percentile (similar to a 95\% confidence interval).
-\item The three options listed above are available for each group included in the analysis. % it is not clear to me what this is referring to
+\item The options for  downloading causes and summaries (as a  .csv files) and the plots (as a  .pdf) are also available
+  for each group included in the analysis.  The corresponding buttons also appear in the panel on the left side of the
+  browser, and will become active after the algorithms have calculated the results.
 \item {\bf Download warnings as .txt} -- This option is located at the very bottom of the panel on the left side of the web browser.
   The associated text file includes the warning and error messages generated by InSilico and the issues encountered and, in some
   cases, the steps taken to reconcile the inconsistencies in the data.
