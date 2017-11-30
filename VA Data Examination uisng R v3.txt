@@ -50,7 +50,7 @@ VA_CSV_results<-read.csv("C:/Users/mbratschi/Desktop/R tut/VAresults.csv", heade
 help(read.csv)
 # Note the direction of the "/" (changed from the path of the directory of the file).
 # header=TRUE indicates that the source file has a header row and the first row is used to name the columns and not part of the data in the table.
-# sep="," indicates that the columns in the file are delimited by ",". Open the CSV file using a text editor (e.g. Notepad or Word to see the delimiter).
+# sep="," indicates that the columns in the file are delimited by ",". Open the CSV file using a text editor (e.g. Notepad or Word) to see the delimiter.
 
 # To be able to load a table from an Excel file (VAresults.xlsx), we need to take some additional steps.
 # Specifically we need to install the following packages.
@@ -58,7 +58,7 @@ install.packages("rstudioapi")
 install.packages("xlsx")
 install.packages("rJava")   ## (this package depends on Java being installed)
 # The above command only need to be run once. You can add "#" to the beginning of the rows of this document after you have installed the packages to turn those rows into comments.
-# However, the packages need to be loaded for every session of R during which they are to be used using the library() command. 
+# However, the packages need to be loaded for every session of R during which they are to be used, using the library() command. 
 library("rstudioapi")
 library("xlsx")
 library("rJava")
