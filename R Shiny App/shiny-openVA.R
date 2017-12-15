@@ -1007,27 +1007,27 @@ server <- function(input, output, session){
             shinyjs::enable("downloadCOD1")
             shinyjs::enable("downloadData1")
         }
-        if(length(male[male])>0){
+        if(input$bySex & length(male[male])>0){
             shinyjs::enable("downloadPlot2")
             shinyjs::enable("downloadCOD2")
             shinyjs::enable("downloadData2")
         }
-        if(length(female[female])>0){
+        if(input$bySex & length(female[female])>0){
             shinyjs::enable("downloadPlot3")
             shinyjs::enable("downloadCOD3")
             shinyjs::enable("downloadData3")
         }
-        if(length(infant[infant])>0){
+        if(input$byAge & length(infant[infant])>0){
             shinyjs::enable("downloadPlot4")
             shinyjs::enable("downloadCOD4")
             shinyjs::enable("downloadData4")
         }
-        if(length(child[child])>0){
+        if(input$byAge & length(child[child])>0){
             shinyjs::enable("downloadPlot5")
             shinyjs::enable("downloadCOD5")
             shinyjs::enable("downloadData5")
         }
-        if(length(adult[adult])>0){
+        if(input$byAge & length(adult[adult])>0){
             shinyjs::enable("downloadPlot6")
             shinyjs::enable("downloadCOD6")
             shinyjs::enable("downloadData6")
