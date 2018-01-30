@@ -37,7 +37,6 @@ from dateutil import parser
 
 # class for connecting to DHIS2 
 class Dhis(object):
-
     def __init__(self, dhisURL, dhisUser, dhisPass):
         if '/api' in dhisURL:
             print('Please do not specify /api/ in the server argument: e.g. --server=play.dhis2.org/demo')
@@ -50,7 +49,7 @@ class Dhis(object):
             dhisURL = 'https://{}'.format(dhisURL)
         self.auth = (dhisUser, dhisPass)
         self.url = '{}/api'.format(dhisURL)
-
+#
     def get(self, endpoint, params=None):
         url = '{}/{}.json'.format(self.url, endpoint)
         if not params:
@@ -65,7 +64,7 @@ class Dhis(object):
                 return r.json()
         except requests.RequestException as e:
             print(e)
-
+#
     def post(self, endpoint, data):
         """
         POST  method for DHIS2 API.
@@ -81,7 +80,7 @@ class Dhis(object):
                 return r.json()
         except requests.RequestException as e:
             print(e)
-
+#
     def post_blob(self, f):
         """ Post file to DHIS2 and return created UID for that file
         :rtype: str
@@ -98,20 +97,19 @@ class Dhis(object):
                 file_id = response['response']['fileResource']['id']
                 print("\tPosted BLOB for VA ID {} - returned fileResource ID: {}".format(va_id, file_id))
                 return file_id
-
+#
         except requests.RequestException as e:
             print(e)
 
 # class for creating VA event & BLOB file
 class VerbalAutopsyEvent(object):
     """ DHIS2 event + a BLOB file resource"""
-
-    # def __init__(self, va_id, program, orgunit, event_date, sex, age, icd10, algorithm_metadata, file_id):
-    def __init__(self, va_id, program, dhisOrgUnit, sex, age, icd10, algorithm_metadata, file_id):
+#
+    def __init__(self, va_id, program, orgunit, event_date, sex, age, icd10, algorithm_metadata, file_id):
         self.va_id = va_id
         self.program = program
         self.dhisOrgUnit = dhisOrgUnit
-        # self.event_date = event_date
+        self.event_date = event_date
         self.sex = sex
         self.age = age
         self.icd10 = icd10
@@ -125,7 +123,7 @@ class VerbalAutopsyEvent(object):
             {"dataElement": "XLHIBoLtjGt", "value": file_id}
         ]
         self.datavalues.append({"dataElement": "oPAg4MA0880", "value": self.age})
-
+#
     def format_to_dhis2(self, dhisUser):
         """
         Format object to DHIS2 compatible event for DHIS2 API
@@ -134,13 +132,13 @@ class VerbalAutopsyEvent(object):
         event = {
             "program": self.program,
             "orgUnit": self.dhisOrgUnit,
-            # "eventDate": datetime.datetime.strftime(self.event_date, '%Y-%m-%d'),
+            "eventDate": datetime.datetime.strftime(self.event_date, '%Y-%m-%d'),
             "status": "COMPLETED",
             "storedBy": dhisUser,
             "dataValues": self.datavalues
         }
         return event
-
+#
     def __str__(self):
         return json.dumps(self, default=lambda o: o.__dict__)
 
@@ -396,7 +394,7 @@ if not os.path.exists(ProcessDir):
         except (MySQLdb.Error, MySQLdb.Warning) as e:
             db.rollback()
         cleanup()
-            
+
 # clear openVAFilesDir (if exists) for processing 
 if os.path.exists(openVAFilesDir):
     try:
@@ -599,11 +597,11 @@ else:
         if vaAlgorithm == "InterVA":
            f.write("data <- map_records_interva4(records) \n")
            f.write("results <- InterVA(Input=data, \n")
-           f.write("\t HIV= '" + interVA_HIV + "', \n")        
+           f.write("\t HIV= '" + interVA_HIV + "', \n")
            f.write("\t Malaria = '" + interVA_Malaria + "', \n")
            f.write("\t output='" + interVA_output + "', \n")
            f.write("\t groupcode=" + interVA_groupcode + ", \n")
-           f.write("\t replicate=" + interVA_replicate + ", \n")                 
+           f.write("\t replicate=" + interVA_replicate + ", \n")
            f.write("\t replicate.bug1=" + interVA_replicate_bug1 + ", \n")
            f.write("\t replicate.bug2=" + interVA_replicate_bug2 + ", \n")
            f.write("\t write=FALSE) \n")
@@ -614,12 +612,12 @@ else:
         f.write("hasCOD <- data$ID %in% as.numeric(cod$ID) \n")
         f.write("dob <- as.Date(as.character(records$consented.deceased_CRVS.info_on_deceased.Id10021), '%b %d, %Y') \n")
         f.write("dod <- as.Date(as.character(records$consented.deceased_CRVS.info_on_deceased.Id10023), '%b %d, %Y') \n")
-        f.write("age <- records$consented.deceased_CRVS.info_on_deceased.ageInYears \n")
-        f.write("age[is.na(age)] <- '' \n")
+        f.write("age <- floor(records$consented.deceased_CRVS.info_on_deceased.ageInDays/365.25) \n")
+        #f.write("age[is.na(age)] <- '' \n")
         f.write("outCOD <- cbind(cod, dob[hasCOD], dod[hasCOD], age[hasCOD], sex[hasCOD]) \n")
         f.write("outNoCOD <- data[!hasCOD,] \n")
-        f.write("write.csv(outCOD, file='" + openVAFilesDir + "/codAssigned.csv', row.names=FALSE) \n")
-        f.write("write.csv(outNoCOD, file='" + openVAFilesDir + "/codNotAssigned.csv', row.names=FALSE)")
+        f.write("write.csv(outCOD, file='" + openVAFilesDir + "/codAssigned.csv', row.names=FALSE, na='') \n")
+        f.write("write.csv(outNoCOD, file='" + openVAFilesDir + "/codNotAssigned.csv', row.names=FALSE, na='')")
         f.close()
     except:
         try:
@@ -671,7 +669,6 @@ else:
 
     va_program_uid = vaPrograms[0]['id']
     icd10_options = [o['code'] for o in api.get('options', params={'filter': 'optionSet.id:eq:LAWwdYur1ds', 'fields': 'code'}).get('options')]
-    # icd10_name = [o['name'] for o in api.get('options', params={'filter': 'optionSet.id:eq:LAWwdYur1ds', 'fields': 'name'}).get('options')]
     algorithm_metadata_options = [o['code'] for o in api.get('options', params={'filter': 'optionSet.id:eq:Joti2JHU4i6', 'fields': 'code'}).get('options')]
 
     blobPath = os.path.join(dhisDir, 'blobs')
@@ -686,31 +683,19 @@ else:
         reader = csv.reader(f)
         reader.next()
         for row in reader:
-            va_id = str(uuid.uuid4())
-            blob_file = "{}.db".format(os.path.join(dhisDir, 'blobs', va_id))
-            create_db(blob_file)
-            file_id = api.post_blob(blob_file)
-            ## NONE OF THE VARIABLES CAN HAVE MISSING VALUES!!!  REQUESTING THAT A NEW CODE FOR MISSING IS ADDED TO DHIS2
-            icd10 = 'R10'
-            age = 22
-            # event_date = parser.parse(row[3]) 
-            event_date = time.strftime('%Y-%m-%d',time.localtime()) ## requited
-            sex = 'male'
-            # e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, event_date, sex, age, icd10, algorithm_metadata_options[0], file_id)
-            e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, sex, age, icd10, algorithm_metadata_options[0], file_id)
-            events.append(e.format_to_dhis2(dhisUser))
+            if row[1]!="Undetermined":
+                va_id = str(uuid.uuid4())
+                blob_file = "{}.db".format(os.path.join(dhisDir, 'blobs', va_id))
+                create_db(blob_file)
+                file_id = api.post_blob(blob_file)
+                icd10 = icd10OpenVA[row[1]]
+                age = row[4]
+                event_date = parser.parse(row[3])
+                sex = row[5].lower()
+                e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, event_date, sex, age, icd10, algorithm_metadata_options[0], file_id)
+                events.append(e.format_to_dhis2(dhisUser))
+                ## HERE -- if row[1]=="Undetermined" then store these records in database for futher (manual?) processing
 
-            # if row[1]!="Undetermined" and row[3]!="NA":
-            #     icd10 = icd10OpenVA[row[1]]
-            #     age = row[4]
-            #     # event_date = parser.parse(row[3]) 
-            #     event_date = time.strftime('%Y-%m-%d',time.localtime()) ## requited
-            #     sex = row[5].lower()
-            #     # e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, event_date, sex, age, icd10, algorithm_metadata_options[0], file_id)
-            #     e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, sex, age, icd10, algorithm_metadata_options[0], file_id)
-            #     events.append(e.format_to_dhis2(dhisUser))
-            # HERE -- if row[3]=="NA" or row[1]=="Undetermined" then store these records in database for manual processing
-                
     export['events'] = events
 
     with open('events.json', 'w') as json_file:
