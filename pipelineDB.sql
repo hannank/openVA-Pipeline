@@ -8,20 +8,21 @@ CREATE TABLE ODK_Conf
   odkURL           char(50),
   odkUser          char(50),
   odkPass          char(50),
-  odkformID        char(50),
+  odkFormID        char(50),
   odkLastRun       date,
   odkLastRunResult int
 );
 
 INSERT INTO ODK_Conf
-  (aggURL, aggUser, aggPass, formID, lastRun, lastRunResult)
+  (odkURL, odkUser, odkPass, odkFormID, odkLastRun, odkLastRunResult)
   VALUES('http://192.168.56.101', 'aggregate', 'aggregate', 'va_who_2016_11_03_v1_4_1', '2016-04-12', '0');
 
 -- ODK event log
 CREATE TABLE ODK_EventLog
 (
   odkEventDesc char(255),
-  odkEventType char(255)
+  odkEventType char(255),
+  odkEventTime char(20)
 );
 
 --  DHIS2 Configuration
@@ -41,5 +42,6 @@ INSERT INTO DHIS_Conf
 CREATE TABLE DHIS_EventLog
 (
   dhisEventDesc char(255),
-  dhisEventType char(255)
+  dhisEventType char(255),
+  dhisEventTime char(20)
 );
