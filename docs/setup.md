@@ -11,18 +11,31 @@
 Within R (to start R, simply type ```R``` at a terminal prompt, or ```sudo R``` for system-wide installation of packages), the necessary packages can be installed (with internet connection) using the following command:    
 ```install.packages(c("openVA", "CrossVA"), dependencies=TRUE)```
 - MySQL Server
-  -  installation instructions for Ubuntu 16.04 can be found [here](https://help.ubuntu.com/lts/serverguide/mysql.html)
+  -  installation for Ubuntu 16.04    
+  ```sudo apt update ```    
+  ```sudo apt install mysql-server```    
+  (the installation will ask for a root password)
+  -  More details for Ubuntu 16.04 can be found [here](https://help.ubuntu.com/lts/serverguide/mysql.html)
 - [Python 2.7](https://www.python.org/downloads/), along with the requests and MySQLdb modules (be sure to install MySQL prior to this step).
-  - installation for Ubuntu 16.04: Python 2.7 is pre-installed, but additional packages and modules are needed, which can be installed with the following command at a terminal:    
+  - installation for Ubuntu 16.04: Python 2.7 is pre-installed, but additional packages and modules are needed, which can be installed with the following commands at a terminal:    
 ```sudo apt update```   
 ```sudo apt install python-pip python-dev libmysqlclient-dev```    
 ```pip install --upgrade pip```    
-```pip install requests mysqlclient```    
+```pip install requests mysqlclient --user```    
 - SQlite
   - installation for Ubuntu 16.04   
   ```sudo apt update```   
   ```sudo apt-get install sqlite3 libsqlite3-dev```   
 
-## Setup of MySQL Database and Tables
-- Pipeline Database
-- 
+## Setup of MySQL: Database & User
+1. Start mysql with ```mysql --user=root -p mysql``` and enter root password when prompted.
+2. Create new database called _Pipeline_ with the command ```CREATE DATABASE Pipeline;```
+3. Create new user (with privileges) for running openVA-Pipeline with the following commands
+```CREATE USER 'user_name'@'localhost' IDENTIFIED BY 'user_password';``` where _user_name_ and _user_password_ are replaced with your own selections.    
+```GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON Pipeline.* TO 'user_name'@'localhost';```   
+4. Exit mysql using the command ```\q;``` 
+5. Edit the pipelineDB.sql script so that it contains the appropriate values for your ODK and DHIS2 servers in the following tables
+  - ODK_Conf: aggURL, aggUser, aggPass, formID
+  - DHIS_Conf: dhisURL, dhisUser, dhisPass, dhisOrgUnit
+6. Run the pipelineDB.sql script with the command    
+```mysql --user=user_name -p Pipeline < pipelineDB.sql```
