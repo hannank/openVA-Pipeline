@@ -35,7 +35,7 @@ Within R (to start R, simply type ```R``` at a terminal prompt, or ```sudo R``` 
 ```GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON Pipeline.* TO 'user_name'@'localhost';```   
 4. Exit mysql using the command ```\q;``` 
 5. Edit the pipelineDB.sql script so that it contains the appropriate values for your ODK and DHIS2 servers in the following tables
-  - ODK_Conf: aggURL, aggUser, aggPass, formID
-  - DHIS_Conf: dhisURL, dhisUser, dhisPass, dhisOrgUnit
+    - ODK_Conf: aggURL, aggUser, aggPass, formID
+    - DHIS_Conf: dhisURL, dhisUser, dhisPass, dhisOrgUnit
 6. Run the pipelineDB.sql script with the command    
 ```mysql --user=user_name -p Pipeline < pipelineDB.sql```
