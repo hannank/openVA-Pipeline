@@ -33,9 +33,10 @@ Within R (to start R, simply type ```R``` at a terminal prompt, or ```sudo R``` 
 3. Create new user (with privileges) for running openVA-Pipeline with the following commands
 ```CREATE USER 'user_name'@'localhost' IDENTIFIED BY 'user_password';``` where _user_name_ and _user_password_ are replaced with your own selections.    
 ```GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON Pipeline.* TO 'user_name'@'localhost';```   
+(More information on adding users in MySQL can be found [here](https://dev.mysql.com/doc/refman/5.7/en/adding-users.html))
 4. Exit mysql using the command ```\q;``` 
 5. Edit the pipelineDB.sql script so that it contains the appropriate values for your ODK and DHIS2 servers in the following tables
-    - ODK_Conf: aggURL, aggUser, aggPass, formID
+    - ODK_Conf: odkURL, odkUser, odkPass, odkFormID
     - DHIS_Conf: dhisURL, dhisUser, dhisPass, dhisOrgUnit
 6. Run the pipelineDB.sql script with the command    
 ```mysql --user=user_name -p Pipeline < pipelineDB.sql```
