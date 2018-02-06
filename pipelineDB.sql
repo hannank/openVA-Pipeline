@@ -1,6 +1,4 @@
---------------------------------------------------------------------------------------------------
--- Set up Pipeline database for ODK & DHIS2 configuration and event logs.
---------------------------------------------------------------------------------------------------
+/* Set up Pipeline database for ODK & DHIS2 configuration and event logs. */
 
 -- ODK configuration
 CREATE TABLE ODK_Conf
