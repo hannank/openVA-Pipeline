@@ -21,7 +21,7 @@ Within R (to start R, simply type ```R``` at a terminal prompt, or ```sudo R``` 
 ```sudo apt update```   
 ```sudo apt install python-pip python-dev libmysqlclient-dev```    
 ```pip install --upgrade pip```    
-```pip install requests mysqlclient --user```    
+```pip install requests mysqlclient python-dateutil --user```    
 - SQlite
   - installation for Ubuntu 16.04   
   ```sudo apt update```   
