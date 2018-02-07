@@ -1,8 +1,8 @@
 # Setup
 ## software requirements
-- Java Development Kit 7 or higher (needed by ODK Briefcase 1.8.0 and the R pakcage [rJava](https://cran.r-project.org/web/packages/rJava/index.html))
-  - instructions for installing JDK 9 on Ubuntu 16.04 can be found [here](http://www.javahelps.com/2017/09/install-oracle-jdk-9-on-linux.html)
-- [ODK Briefcase](https://opendatakit.org/downloads/download-category/briefcase/): the most recent (Sept. 12, 2017) version is 1.8.0
+- Java Development Kit (JDK) 7 or 8 (needed by ODK Briefcase 1.8.0 and the R pakcage [rJava](https://cran.r-project.org/web/packages/rJava/index.html))
+  - instructions for installing JDK 8 on Ubuntu 16.04 can be found [here](http://www.javahelps.com/2015/03/install-oracle-jdk-in-ubuntu.html)
+- [ODK Briefcase](https://opendatakit.org/downloads/download-category/briefcase/): the most recent (Sept. 12, 2017) version is 1.8.0 (as of latest tests, does not work with JDK 9)
 - [R](https://cran.r-project.org/) & packages: [openVA](https://cran.r-project.org/web/packages/openVA/index.html), [CrossVA](https://cran.r-project.org/web/packages/CrossVA/index.html), and their dependencies.  _Install R AFTER Java_.
   - installation for Ubuntu 16.04:    
   ```sudo apt update```    
