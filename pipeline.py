@@ -690,7 +690,10 @@ else:
                 file_id = api.post_blob(blob_file)
                 icd10 = icd10OpenVA[row[1]]
                 age = row[4]
-                event_date = parser.parse(row[3])
+                if row3 =="":
+                    event_date = datetime.date(9999,9,9)
+                else:
+                    event_date = parser.parse(row[3])
                 sex = row[5].lower()
                 e = VerbalAutopsyEvent(va_id, va_program_uid, dhisOrgUnit, event_date, sex, age, icd10, algorithm_metadata_options[0], file_id)
                 events.append(e.format_to_dhis2(dhisUser))
