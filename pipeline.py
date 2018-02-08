@@ -1,14 +1,14 @@
 #------------------------------------------------------------------------------------------------------------------------------------------#
 #
 # pipeline.py
-# 
+#
 # Notes:
 #
 # (1) Configuration for ODK Aggregate, openVA, and DHIS2 are stored in MySQL tables in the Pipeline database
 #     (ODK_Conf, openVAConf, and DHIS_Conf, respectively).
 #
 # (2) Log files:
-#     -- Errors associated with MySQL Pipeline database 
+#     -- Errors associated with MySQL Pipeline database
 #        ++ connectionErrorFile = "./MySQLConnect.csv"
 #           (unable to connect to DB; cleanup() attempt to remove this file on exit if able to log error in database)
 #        ++ errorFile = "./dbErrorLog.csv"
@@ -30,13 +30,15 @@ import sqlite3
 import time
 import uuid
 from dateutil import parser
+import re
 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
-# Define functions and objects needed for functioning of pipeline; then set up log files and configuration of pipeline 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+# Define functions and objects needed for functioning of pipeline; then set up log files and configuration of pipeline
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 
-# class for connecting to DHIS2 
+# class for connecting to DHIS2
 class Dhis(object):
+#
     def __init__(self, dhisURL, dhisUser, dhisPass):
         if '/api' in dhisURL:
             print('Please do not specify /api/ in the server argument: e.g. --server=play.dhis2.org/demo')
@@ -48,7 +50,7 @@ class Dhis(object):
         elif not dhisURL.startswith('https://'):
             dhisURL = 'https://{}'.format(dhisURL)
         self.auth = (dhisUser, dhisPass)
-        self.url = '{}/api'.format(dhisURL)
+        self.url = '{}/api/25'.format(dhisURL)
 #
     def get(self, endpoint, params=None):
         url = '{}/{}.json'.format(self.url, endpoint)
@@ -162,27 +164,41 @@ def create_db(f):
         cur.execute("INSERT INTO Cars VALUES(8,'Volkswagen',21600)")
 
 # ICD10 Codes for openVA output
-icd10OpenVA = {"Sepsis (non-obstetric)": "A40", "Acute resp infect incl pneumonia": "J00", "HIV/AIDS related death": "B20",
-               "Diarrhoeal diseases": "A00", "Malaria": "B50", "Measles": "B05", "Meningitis and encephalitis": "A39", "Tetanus": "A33",
-               "Pulmonary tuberculosis": "A15", "Pertussis": "A37", "Haemorrhagic fever": "A90", "Other and unspecified infect dis": "A17",
-               "Oral neoplasms": "C00", "Digestive neoplasms": "C15", "Respiratory neoplasms": "C30", "Breast neoplasms": "C50",
-               "Reproductive neoplasms MF": "C51", "Other and unspecified neoplasms": "C07", "Severe anaemia": "D50",
-               "Severe malnutrition": "E40", "Diabetes mellitus": "E10", "Acute cardiac disease": "I20", "Sickle cell with crisis": "I60",
-               "Stroke": "D57", "Other and unspecified cardiac dis": "I00", "Chronic obstructive pulmonary dis": "J40", "Asthma": "J45",
-               "Acute abdomen": "R10", "Liver cirrhosis": "K70", "Renal failure": "N17", "Epilepsy": "G40", "Other and unspecified NCD": "D55",
-               "Ectopic pregnancy": "O00", "Abortion-related death": "O03", "Pregnancy-induced hypertension": "O10", "Obstetric haemorrhage": "O46",
-               "Obstructed labour": "O63", "Pregnancy-related sepsis": "O85", "Anaemia of pregnancy": "O99", "Ruptured uterus": "O71",
-               "Other and unspecified maternal CoD": "O01", "Prematurity": "P05", "Birth asphyxia": "P20", "Neonatal pneumonia": "P23",
-               "Neonatal sepsis": "P36", "Congenital malformation": "Q00", "Other and unspecified neonatal CoD": "P00",
-               "Fresh stillbirth": "P95", "Macerated stillbirth": "P95", "Road traffic accident": "V01", "Other transport accident": "V90",
-               "Accid fall": "W00", "Accid drowning and submersion": "W65", "Accid expos to smoke fire & flame": "X00",
-               "Contact with venomous plant/animal": "X20", "Accid poisoning and noxious subs": "X40", "Intentional self-harm": "X60",
-               "Assault": "X85", "Exposure to force of nature": "X30", "Other and unspecified external CoD": "S00", "Cause of death unknown": "R95"}
+icd10OpenVA = {"01.01 Sepsis (non-obstetric)": "1.01", "01.02 Acute respiratory infection, including pneumonia": "1.02",
+	           "01.03 HIV/AIDS related death": "1.03", "01.04 Diarrhoeal diseases": "1.04", "01.05 Malaria": "1.05",
+	           "01.06 Measles": "1.06", "01.07 Meningitis and encephalitis": "1.07", "01.08 10.05 Tetanus": "01.08 10.05",
+	           "01.09 Pulmonary tuberculosis": "1.09", "01.10 Pertussis": "1.1", "01.11 Haemorrhagic fever": "1.11",
+	           "01.12 Dengue fever": "1.12", "01.99 Unspecified infectious disease": "1.99", "02.01 Oral neoplasms": "2.01",
+	           "02.02 Digestive neoplasms": "2.02", "02.03 Respiratory neoplasms": "2.03", "02.04 Breast neoplasms": "2.04",
+	           "02.05 02.06 Reproductive neoplasms M, F": "02.05 02.06", "02.99 Other and unspecified neoplasms": "2.99",
+	           "03.01 Severe anaemia": "3.01", "03.02 Severe malnutrition": "3.02", "03.03 Diabetes mellitus": "3.03",
+	           "04.01 Acute cardiac disease": "4.01", "04.03 Sickle cell with crisis": "4.03", "04.02 Stroke": "4.02",
+	           "04.99 Other and unspecified cardiac disease": "4.99", "05.01 Chronic obstructive pulmonary disease (COPD)": "5.01",
+	           "05.02 Asthma": "5.02", "06.01 Acute abdomen": "6.01", "06.02 Liver cirrhosis": "6.02", "07.01 Renal failure": "7.01",
+	           "08.01 Epilepsy": "8.01", "98 Other and unspecified non-communicable disease": "98", "09.01 Ectopic pregnancy": "9.01",
+	           "09.02 Abortion-related death": "9.02", "09.03 Pregnancy-induced hypertension": "9.03", "09.04 Obstetric haemorrhage": "9.04",
+	           "09.05 Obstructed labour": "9.05", "09.06 Pregnancy-related sepsis": "9.06", "09.07 Anaemia of pregnancy": "9.07",
+	           "09.08 Ruptured uterus": "9.08", "09.99 Other and unspecified maternal cause": "9.99", "10.01 Prematurity ": "10.01",
+	           "10.02 Birth asphyxia ": "10.02", "10.03 Neonatal pneumonia ": "10.03", "10.04 Neonatal sepsis ": "10.04",
+	           "10.06 Congenital malformation": "10.06", "10.99 Other and unspecified perinatal cause of death": "10.99",
+	           "11.01 Fresh stillbirth": "11.01", "11.02 Macerated stillbirth ": "11.02", "12.01 Road traffic accident ": "12.01",
+	           "12.02 Other transport accident": "12.02", "12.03 Accidental fall": "12.03", "12.04 Accidental drowning and submersion": "12.04",
+	           "12.05 Accidental exposure to smoke, fire and flames": "12.05", "12.06 Contact with venomous plant/animal ": "12.06",
+	           "12.07 Accidental poisoning and exposure to noxious substance": "12.07", "12.08 Intentional self-harm": "12.08",
+	           "12.09 Assault": "12.09", "12.10 Exposure to force of nature": "12.1", "12.99 Other and unspecified external cause of death": "12.99",
+	           "99 Cause of death unknown": "99"}
+
+# function for finding ICD10 code for openVA results
+def getICD(myDict, searchFor):
+    for i in range(len(myDict.keys())):
+        match = re.search(searchFor, myDict.keys()[i])
+        if match:
+            return myDict.values()[i]
 
 # set the ODK_Conf table item odkLastRunResult as 0, close db and exit script upon error or completion of script
 def cleanup():
     if connectionError == "1":
-        # errorMsg = [time, e] 
+        # errorMsg = [time, e]
         f = open(connectionErrorFile, "wb")
         writer = csv.writer(f)
         writer.writerow([timeFMT] + ["Unable to Connect to MySQL Database, see dbErrorLog.csv for details"])
@@ -216,7 +232,7 @@ errorFile = "./dbErrorLog.csv"
 timeFMT = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 connectionError = "0"
 connectionErrorFile = "./MySQLConnect.csv"
-    
+
 if os.path.isfile(errorFile) == False:
     f = open(errorFile, "wb")
     writer = csv.writer(f)
@@ -284,9 +300,9 @@ rScriptIn  = openVAFilesDir + "/RScript.R"
 rScriptOut = openVAFilesDir + "/RScript.Rout"
 dhisDir = ProcessDir + "/DHIS2"
 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 # OPENVA ALGORITHM DEFAULTS -- move these to MySQL Pipeline database
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 #### HERE -- how do you want to read in the primary inputs
 vaAlgorithm = "InterVA"
 DataType = '"WHO"'
@@ -308,7 +324,7 @@ DataType = '"WHO"'
      #   phy.code = NULL, phy.cat = NULL, phy.unknown = NULL,
      #   phy.external = NULL, phy.debias = NULL, exclude.impossible.cause = TRUE,
      #   indiv.CI = NULL)
-#### Required Args: Input, Nsim 
+#### Required Args: Input, Nsim
 insilico_Nsim = "10000"
 insilico_isNumeric = "FALSE"
 insilico_updateCondProb = "TRUE"
@@ -378,9 +394,9 @@ tariff_nboot_sig = "500"
 tariff_use_top = "FALSE"
 tariff_ntop = "40"
 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
-# Remove old files, merge unprocessed Briefcase export (if exists), and then start flow of records through pipeline 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# 
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+# Remove old files, merge unprocessed Briefcase export (if exists), and then start flow of records through pipeline
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 # check if processing directory exists and create if necessary (the processing dir is currently set as the working directory where pipeline.py resides so might not want this)
 if not os.path.exists(ProcessDir):
     try:
@@ -395,7 +411,7 @@ if not os.path.exists(ProcessDir):
             db.rollback()
         cleanup()
 
-# clear openVAFilesDir (if exists) for processing 
+# clear openVAFilesDir (if exists) for processing
 if os.path.exists(openVAFilesDir):
     try:
         shutil.rmtree(openVAFilesDir)
@@ -443,7 +459,7 @@ if os.path.isfile(odkBCExportNewFile) == True and odkLastRunResult == 1 and not 
         print IOError
         print OSError
         try:
-            sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime)" 
+            sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime)"
             par = ("Could not remove OpenVAReadyFile.csv", "Error", timeFMT)
             cursor.execute(sql, par)
             db.commit()
@@ -474,7 +490,7 @@ if rc != 0:
         par = (stderr, "Error", timeFMT)
         cursor.execute(sql, par)
         db.commit()
-    except (MySQLdb.Error, MySQLdb.Warning) as e: 
+    except (MySQLdb.Error, MySQLdb.Warning) as e:
         db.rollback()
     cleanup()
 if "SEVERE" in stderr:
@@ -505,7 +521,7 @@ else:
                 outFile.write(header)
                 for line in filetwo:
                     if line not in fileone:
-                        outFile.write(line) 
+                        outFile.write(line)
         except:
             try:
                 sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES"
@@ -634,7 +650,7 @@ else:
     rprocess = subprocess.Popen(rBatch, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdout, stderr = rprocess.communicate()
     rrc = rprocess.returncode
-    if rrc != 0: 
+    if rrc != 0:
         try:
             sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES (%s, %s, %s)"
             par = ("Could not run R Script","Error", timeFMT)
@@ -643,18 +659,18 @@ else:
         except:
             db.rollback()
             cleanup()
-            
+
         ## HERE -- you could search output file for "Error" and "Execution halted" (last two lines) and copy Error to log
         ##         (use regulare expression -- import re and re.findall()
-        else:
-            try:
-                sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES (%s, %s, %s)"
-                par = ("OpenVA Analysis Completed Successfully","Information", timeFMT)
-                cursor.execute(sql)
-                db.commit()
-            except (MySQLdb.Error, MySQLdb.Warning) as e:
-                db.rollback()
-                cleanup()
+    else:
+        try:
+            sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES (%s, %s, %s)"
+            par = ("OpenVA Analysis Completed Successfully","Information", timeFMT)
+            cursor.execute(sql)
+            db.commit()
+        except (MySQLdb.Error, MySQLdb.Warning) as e:
+            db.rollback()
+            cleanup()
 
     # read in results
     api = Dhis(dhisURL, dhisUser, dhisPass)
@@ -688,9 +704,9 @@ else:
                 blob_file = "{}.db".format(os.path.join(dhisDir, 'blobs', va_id))
                 create_db(blob_file)
                 file_id = api.post_blob(blob_file)
-                icd10 = icd10OpenVA[row[1]]
+                icd10 = search(icd10OpenVA, row[1])
                 age = row[4]
-                if row3 =="":
+                if row[3] =="":
                     event_date = datetime.date(9999,9,9)
                 else:
                     event_date = parser.parse(row[3])
