@@ -654,7 +654,7 @@ else:
         try:
             sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES (%s, %s, %s)"
             par = ("Could not run R Script","Error", timeFMT)
-            cursor.execute(sql)
+            cursor.execute(sql, par)
             db.commit()
         except:
             db.rollback()
@@ -666,11 +666,11 @@ else:
         try:
             sql = "INSERT INTO ODK_EventLog(odkEventDesc, odkEventType, odkEventTime) VALUES (%s, %s, %s)"
             par = ("OpenVA Analysis Completed Successfully","Information", timeFMT)
-            cursor.execute(sql)
+            cursor.execute(sql, par)
             db.commit()
         except (MySQLdb.Error, MySQLdb.Warning) as e:
             db.rollback()
-            cleanup()
+            #cleanup()
 
     # read in results
     api = Dhis(dhisURL, dhisUser, dhisPass)
@@ -704,7 +704,7 @@ else:
                 blob_file = "{}.db".format(os.path.join(dhisDir, 'blobs', va_id))
                 create_db(blob_file)
                 file_id = api.post_blob(blob_file)
-                icd10 = search(icd10OpenVA, row[1])
+                icd10 = getICD(icd10OpenVA, row[1])
                 age = row[4]
                 if row[3] =="":
                     event_date = datetime.date(9999,9,9)
